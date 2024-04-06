@@ -8,49 +8,124 @@ package com.jlang;
  * Parser Rules
  */
 
-chat : line+ EOF ;
+parser grammar ExprParser;
+options { tokenVocab=ExprLexer; }
 
-line : name command message NEWLINE ;
+program
+    : content ;
 
-name : WORD WHITESPACE ;
+content
+    : stat content* EOF
+    | def content* EOF
+    | variable_declaration content* EOF
+    | variable_assignment content* EOF
+    | arithmetic_assignment content* EOF
+    ;
 
-command : (SAYS | SHOUTS) ':' WHITESPACE ;
+stat: ID '=' expr
+    | expr
+    ;
 
-message : (emoticon | link | color | mention | WORD | WHITESPACE)+ ;
+def : ID '(' ID (',' ID)* ')' '{' stat* '}' ;
 
-emoticon : ':' '-'? ')'
-         | ':' '-'? '(' ;
+expr: ID
+    | INT
+    | func
+    | 'not' expr
+    | expr 'and' expr
+    | expr 'or' expr
+    ;
 
-link : '[' TEXT ']' '(' TEXT ')' ;
+func : ID '(' expr (',' expr)* ')' |
+standard_hardcoded_function_with_string_input;
 
-color : '/' WORD '/' message '/' ;
+arithmetic_assignment :
+ID ARITHMETIC_ASSIGNMENT arithmetic_statement ;
 
-mention : '@' + WORD ;
+arithmetic_statement :
+ID arithmetic_statement_content |
+NUMBER arithmetic_statement_content ;
+
+arithmetic_statement_content :
+ARITHMETIC_SIGN ID
+    arithmetic_statement_content* |
+ARITHMETIC_SIGN NUMBER
+    arithmetic_statement_content* |
+ARITHMETIC_SIGN computed_in_brackets
+    arithmetic_statement_content* ;
+
+standard_hardcoded_function_with_string_input :
+    HARDCODED_FUNCTIONS_WITH_STRING_INPUTS
+    '(' STRING ')' ;
+
+computed_in_brackets:
+    '(' arithmetic_statement ')' ;
+
+variable_assignment :
+VAR_DECLARATION ID
+    ASSIGNMENT_DECLARATION NUMBER |
+ VAR_DECLARATION ID
+    ASSIGNMENT_DECLARATION arithmetic_statement ;
+
+variable_declaration :
+VAR_DECLARATION ID
+    TYPE_DECLARATION NUMBER_TYPE ;
 
 
 /**
  * Lexer Rules
  */
 
-fragment A : ('A' | 'a') ;
-fragment S : ('S' | 's') ;
-fragment Y : ('Y' | 'y') ;
-fragment H : ('H' | 'h') ;
-fragment O : ('O' | 'o') ;
-fragment U : ('U' | 'u') ;
-fragment T : ('T' | 't') ;
+HARDCODED_FUNCTIONS_WITH_STRING_INPUTS :
+    STD_READ |
+    STD_INPUT ;
 
-fragment LOWERCASE : [a-z] ;
-fragment UPPERCASE : [A-Z] ;
+NUMBER_TYPE : INT_TYPE | REAL_TYPE ;
+NUMBER : INT | DBL ;
 
-SAYS : S A Y S ;
+INT_TYPE: 'intem' ;
+REAL_TYPE: 'rzeczywiste' ;
+VAR_DECLARATION: 'no to mamy';
+TYPE_DECLARATION: 'co jest' ;
+ASSIGNMENT_DECLARATION: 'rowne' ;
+ARITHMETIC_ASSIGNMENT: 'bedzie drodzy panstwo' ;
+STD_READ : 'na zachodzie jest' ;
+STD_INPUT : 'lewa reka za prawe ucho' ;
 
-SHOUTS : S H O U T S ;
+ARITHMETIC_SIGN
+        : PLUS
+        | MINUS
+        | TIMES
+        | DIVIDE
+        ;
 
-WORD : (LOWERCASE | UPPERCASE | '_')+ ;
 
-WHITESPACE : (' ' | '\t')+ ;
+PLUS : '+' ;
+MINUS : '-' ;
+TIMES : '*' ;
+DIVIDE : '/' ;
+AND : 'and' ;
+OR : 'or' ;
+NOT : 'not' ;
+EQ : '=' ;
+COMMA : ',' ;
+SEMI : ';' ;
+LPAREN : '(' ;
+RPAREN : ')' ;
+LCURLY : '{' ;
+RCURLY : '}' ;
+PT : '.' ;
 
-NEWLINE : ('\r'? '\n' | '\r')+ ;
 
-TEXT : ('[' | '(') ~[\])]+ (']' | ')') ;
+
+INT : [0-9]+ ;
+DBL : INT+ PT INT+
+    | PT INT+
+    | INT+
+    | INT PT
+    ;
+ID: [a-zA-Z_][a-zA-Z_0-9]* ;
+STRING: '\'' [a-zA-Z \t]* '\'' ;
+WS: [ \t\n\r\f]+ -> skip ;
+
+
