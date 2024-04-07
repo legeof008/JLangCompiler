@@ -1,4 +1,4 @@
-grammar Chat;
+grammar Jlang;
 
 @header {
 package com.jlang;
@@ -7,9 +7,6 @@ package com.jlang;
 /**
  * Parser Rules
  */
-
-parser grammar ExprParser;
-options { tokenVocab=ExprLexer; }
 
 program
     : content ;
