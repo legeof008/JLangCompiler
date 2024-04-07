@@ -27,7 +27,7 @@ generateGrammarSource {
         println "Copying generated grammar lexer/parser files to main directory."
         copy {
             from "build/generated-src/antlr/main"
-            into "generated-src/main/java"
+            into "generated-src/main/java/com/jlang/antlr"
         }
     }
 }

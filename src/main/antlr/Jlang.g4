@@ -1,7 +1,7 @@
 grammar Jlang;
 
 @header {
-package com.jlang;
+package com.jlang.antlr;
 }
 
 /**
