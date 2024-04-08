@@ -2,19 +2,15 @@
 ## Introduction
 The following is a course project for course "Formal Languages and Compilers".
 
+## Requirements
+- JDK 21 (compatible with gradle 8.5)
+
 ## Code generation
 In order to generate code you have to run configuration named `generateGrammarSource` which you can do either by running it directly in Intelij IDE or by command prompt like:
 ```terminal
 gradle generateGrammarSource
 ```
-This should result in creation of `generated-src` directory in root directory of the project :
-```
-*
-|- generated-src
-|- gradle
-|- src
-|- <.gitignore, gradle files and README.md>
-```
+This will generate antlr sources, which will be placed in the `build` directory.
 Now you should be able to use them by normally importing them in the code.
 
 ## Sample

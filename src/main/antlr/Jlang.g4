@@ -1,9 +1,5 @@
 grammar Jlang;
 
-@header {
-package com.jlang.antlr;
-}
-
 /**
  * Parser Rules
  */
