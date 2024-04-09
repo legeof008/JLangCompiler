@@ -14,6 +14,7 @@ import java.util.BitSet;
 
 @Builder
 public class JErrorListener extends BaseErrorListener {
+
     @NonNull
     private ErrorLoggingBackend errorLoggingBackend;
 

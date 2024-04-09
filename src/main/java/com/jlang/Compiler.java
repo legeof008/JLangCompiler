@@ -3,18 +3,38 @@ package com.jlang;
 import com.jlang.antlr.JlangBaseListener;
 import com.jlang.antlr.JlangLexer;
 import com.jlang.antlr.JlangParser;
-import lombok.NoArgsConstructor;
+import com.jlang.error.ConsoleErrorLoggingBackend;
+import com.jlang.error.ErrorLoggingBackend;
+import com.jlang.error.JErrorListener;
+import io.vavr.control.Either;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
-@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Compiler {
 
+    @NonNull
+    private final ErrorLoggingBackend errorLoggingBackend;
+
+    public static Compiler withDefaults() {
+        return new Compiler(
+                new ConsoleErrorLoggingBackend()
+        );
+    }
+
+    public static Compiler withLogging(@NonNull ErrorLoggingBackend errorLoggingBackend) {
+        return new Compiler(errorLoggingBackend);
+    }
+
     // TODO: Errors?
-    public Output compile(@NonNull CharStream input) {
+    public Either<Failure, Output> compile(@NonNull CharStream input) {
         final var parser = getParserFor(input);
+        parser.removeErrorListeners();
+        parser.addErrorListener(JErrorListener.builder().errorLoggingBackend(errorLoggingBackend).build());
 
         final var ast = parser.program();
         final var walker = new ParseTreeWalker();
@@ -23,7 +43,7 @@ public class Compiler {
         walker.walk(listener, ast);
 
         // TODO: Get LLVM IR from listener
-        return new Output("Mocked output!");
+        return Either.right(new Output("implement me!")); // TODO: Return LLVM IR or failure
     }
 
     private static JlangParser getParserFor(CharStream input) {
@@ -33,5 +53,8 @@ public class Compiler {
     }
 
     public record Output(String output) {
+    }
+
+    public record Failure(String message) {
     }
 }
