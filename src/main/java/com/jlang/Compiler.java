@@ -62,6 +62,6 @@ public class Compiler {
     public record Output(@NonNull String output) {
     }
 
-    public record Failure(@NonNull List<String> message) {
+    public record Failure(@NonNull List<String> messages) {
     }
 }
