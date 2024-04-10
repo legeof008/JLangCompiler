@@ -20,7 +20,7 @@ public class IntermediaryDeclarationGenerator implements DeclarationGenerator {
     }
 
     @Override
-    public String assign(String id, VariableType type) {
-        return "";
+    public String assign(String id, String value) {
+        return "store i32 %s, ptr %s".formatted(value, REGISTRY_SYMBOL + id);
     }
 }

@@ -6,6 +6,8 @@ import com.jlang.antlr.JlangParser;
 import com.jlang.error.ConsoleErrorContext;
 import com.jlang.error.ErrorContext;
 import com.jlang.error.JErrorListener;
+import com.jlang.listener.JLangGeneratorListener;
+import com.jlang.llvm.LLVMGeneratorFacade;
 import io.vavr.control.Either;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -40,7 +42,9 @@ public class Compiler {
 
         final var ast = parser.program();
         final var walker = new ParseTreeWalker();
-        final var listener = new JlangBaseListener(); // TODO: Implement listener
+
+        final var codeGenerationFacade = new LLVMGeneratorFacade();
+        final var listener = new JLangGeneratorListener(codeGenerationFacade); // TODO: Implement listener
 
         walker.walk(listener, ast);
 
