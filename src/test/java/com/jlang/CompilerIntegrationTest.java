@@ -32,12 +32,23 @@ class CompilerIntegrationTest {
 
         private static Stream<Arguments> testCompileValid() {
             return Stream.of(
+                    of("", "empty input"),
                     of("no to mamy x co jest intem", "variable declaration"),
                     of("no to mamy x co jest intem\n", "variable declaration with newline"),
                     of("no to mamy x co jest  intem", "variable declaration with space"),
                     of("no to mamy  x  co jest  intem\n\t", "variable declaration with multiple space"),
                     of("x bedzie drodzy panstwo 2", "variable assignment"),
-                    of("x bedzie drodzy panstwo 2 + 1", "variable arithmetic assignment")
+                    of("x bedzie drodzy panstwo 2 + 1", "variable arithmetic assignment"),
+                    of("x bedzie drodzy panstwo 2 + 1\n", "variable arithmetic assignment with newline"),
+                    of("c bedzie drodzy panstwo 2 * (2 + 1)", "variable arithmetic assignment with newline"),
+                    of("c bedzie drodzy panstwo (2 * (2 + 1)) / 3", "variable arithmetic assignment with newline"),
+                    of("nazachodziejest ('trudniej niz u nas bo nikt nie uczy przepisu na zupe')", "print string"),
+                    of("nazachodziejest ('trudniej niz u nas, nikt nie uczy przepisu na zupe')", "print string with commas"),
+                    of("nazachodziejest ('\t duzo trudniej niz u nas - ludzie \\'escapuja\\'\n\r \"dziwne\" \b znaki')", "print string with escape characters"),
+                    of("nazachodziejest (2)", "print int32"),
+                    of("nazachodziejest ((2 + 1) / 2)", "print int32 arithmetic"),
+                    of("nazachodziejest (2.)", "print double"),
+                    of("nazachodziejest (2. + 1.4)", "print double arithmetic")
             );
         }
 
