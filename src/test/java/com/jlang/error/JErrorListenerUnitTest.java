@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 class JErrorListenerUnitTest {
 
     @Mock
-    private ErrorLoggingBackend errorLoggingBackend;
+    private ErrorContext errorContext;
 
     @Mock
     private Recognizer<?, ?> recognizer;
@@ -23,7 +23,7 @@ class JErrorListenerUnitTest {
     @BeforeEach
     void setUp() {
         jErrorListener = JErrorListener.builder()
-                .errorLoggingBackend(errorLoggingBackend)
+                .errorContext(errorContext)
                 .build();
     }
 
@@ -34,6 +34,6 @@ class JErrorListenerUnitTest {
         jErrorListener.syntaxError(recognizer, null, 1, 1, "msg", null);
 
         // then
-        verify(errorLoggingBackend).accept("line 1:1 msg");
+        verify(errorContext).accept("line 1:1 msg");
     }
 }

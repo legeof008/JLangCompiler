@@ -1,9 +1,8 @@
 package com.jlang;
 
-import com.jlang.error.AssertingErrorLoggingBackend;
+import com.jlang.error.AssertingErrorContext;
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -21,7 +20,7 @@ class CompilerIntegrationTest {
     @Nested
     class Valid {
 
-        private final AssertingErrorLoggingBackend assertingErrorLoggingBackend = new AssertingErrorLoggingBackend();
+        private final AssertingErrorContext assertingErrorLoggingBackend = new AssertingErrorContext();
 
         @BeforeEach
         void setUp() {
@@ -84,7 +83,7 @@ class CompilerIntegrationTest {
 
         @ParameterizedTest
         @MethodSource
-        @Disabled("#13")
+//        @Disabled("#13")
         void testCompileWithError(String rawInput) {
             // given
             var input = CharStreams.fromString(rawInput);
