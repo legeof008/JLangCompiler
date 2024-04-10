@@ -37,7 +37,7 @@ ID ARITHMETIC_ASSIGNMENT arithmetic_statement ;
 
 arithmetic_statement :
 ID arithmetic_statement_content |
-NUMBER arithmetic_statement_content ;
+NUMBER arithmetic_statement_content* ;
 
 arithmetic_statement_content :
 ARITHMETIC_SIGN ID

@@ -2,7 +2,6 @@ package com.jlang;
 
 import com.jlang.error.AssertingErrorLoggingBackend;
 import org.antlr.v4.runtime.CharStreams;
-import org.assertj.vavr.api.VavrAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -12,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import static org.assertj.vavr.api.VavrAssertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
 class CompilerIntegrationTest {
@@ -35,17 +35,23 @@ class CompilerIntegrationTest {
                     of("no to mamy x co jest intem", "variable declaration"),
                     of("no to mamy x co jest intem\n", "variable declaration with newline"),
                     of("no to mamy x co jest  intem", "variable declaration with space"),
-                    of("no to mamy  x  co jest  intem\n\t", "variable declaration with multiple space")
+                    of("no to mamy  x  co jest  intem\n\t", "variable declaration with multiple space"),
+                    of("x bedzie drodzy panstwo 2", "variable assignment"),
+                    of("x bedzie drodzy panstwo 2 + 1", "variable arithmetic assignment")
             );
         }
 
         @ParameterizedTest
         @MethodSource
         void testCompileValid(String rawInput, String description) {
+            // given
             var input = CharStreams.fromString(rawInput);
+
+            // when
             var output = compiler.compile(input);
 
-            VavrAssertions.assertThat(output)
+            // then
+            assertThat(output)
                     .as(description)
                     .isRight();
         }
@@ -69,11 +75,14 @@ class CompilerIntegrationTest {
         @MethodSource
         @Disabled("#13")
         void testCompileWithError(String rawInput) {
-            compiler = Compiler.withDefaults(); // Do not fail if error encountered
+            // given
             var input = CharStreams.fromString(rawInput);
+
+            // when
             var output = compiler.compile(input);
 
-            VavrAssertions.assertThat(output)
+            // then
+            assertThat(output)
                     .isLeft();
         }
     }
