@@ -9,7 +9,8 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum VariableType {
 	INTEGER_32("i32", ".3"),
-	DOUBLE("double", ".1");
+	DOUBLE("double", ".1"),
+	STRING("i8*", ".5");
 
 	private final String llvmVariableNameLiteral;
 	private final String llvmStringPointer;
@@ -17,7 +18,9 @@ public enum VariableType {
 		"intem",
 		INTEGER_32,
 		"rzeczywiste",
-		DOUBLE
+		DOUBLE,
+		"@strps",
+		STRING
 	);
 
 	public static VariableType map(String antlrTypeName) {

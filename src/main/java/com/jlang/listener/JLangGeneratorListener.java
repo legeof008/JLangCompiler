@@ -61,6 +61,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	}
 
 	@Override
+	public void exitString(JlangParser.StringContext ctx) {
+		stack.push(new Value(ctx.getText(), VariableType.STRING));
+	}
+
+	@Override
 	public void exitIntDeclaration(JlangParser.IntDeclarationContext ctx) {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, VariableType.INTEGER_32));
@@ -80,8 +85,14 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	) {
 		var id = ctx.ID().getText();
 		var value = stack.pop();
-		programParts.add(codeGenerationFacade.declare(id, value.type()));
-		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+		if (value.type() == VariableType.STRING) {
+			programParts.addFirst(codeGenerationFacade.createConstantString(id, value.value()));
+			programParts.add(codeGenerationFacade.declare(id, value.type()));
+			programParts.add(codeGenerationFacade.assign(id, id, value.value().length()));
+		} else {
+			programParts.add(codeGenerationFacade.declare(id, value.type()));
+			programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+		}
 		variables.put(id, value.type());
 	}
 
@@ -198,7 +209,12 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			return;
 		}
 		var type = variables.get(id);
-		var load = codeGenerationFacade.load(id, type);
+
+		var load = switch (type) {
+			case DOUBLE, INTEGER_32 -> codeGenerationFacade.load(id, type);
+			case STRING -> codeGenerationFacade.loadString(id, 16, type);
+		};
+
 		programParts.add(load._2());
 
 		stack.push(new Value(load._1.value(), type));
@@ -240,6 +256,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (argument.type()) {
 				case INTEGER_32 -> "@.str.1";
 				case DOUBLE -> "@.str";
+				case STRING -> "@.str.5";
 			};
 		final var printfCode = String.format(
 			"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
@@ -271,6 +288,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (variables.get(argument.value())) {
 				case INTEGER_32 -> "@.str.4";
 				case DOUBLE -> "@.str.3";
+				case STRING -> "";
 			};
 		final var scanfCode = String.format(
 			"call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",

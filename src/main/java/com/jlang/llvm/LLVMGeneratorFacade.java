@@ -29,6 +29,22 @@ public class LLVMGeneratorFacade {
 			);
 	}
 
+	public String createConstantString(String originalVariableId, String value) {
+		return "@__const.main.str.%s = private unnamed_addr constant [255 x i8] c\"%s\"".formatted(
+				originalVariableId,
+				value.length(),
+				value
+			);
+	}
+
+	public String assign(String id, String constantId, int constantValueLength) {
+		return "  call void @llvm.memcpy.p0.p0.i64(ptr align 16 %%%s, ptr align 16 @__const.main.str.%s, i64 %d, i1 false)".formatted(
+				id,
+				constantId,
+				constantValueLength
+			);
+	}
+
 	/**
 	 * Add two values
 	 * @return Tuple2<Integer,String> where Integer is the registry and String is the LLVM code
@@ -136,6 +152,20 @@ public class LLVMGeneratorFacade {
 					registry,
 					type.getLlvmVariableNameLiteral(),
 					type.getLlvmVariableNameLiteral(),
+					id
+				)
+		);
+		registry++;
+		return load;
+	}
+
+	public Tuple2<Value, String> loadString(String id, int stringLength, VariableType type) {
+		var load = Tuple.of(
+			Value.atRegistry(registry, type),
+			"%%%d = getelementptr inbounds [%d x i8], [%d x i8]* %%%s, i64 0, i64 0".formatted(
+					registry,
+					stringLength,
+					stringLength,
 					id
 				)
 		);

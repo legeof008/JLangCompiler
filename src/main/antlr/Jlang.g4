@@ -46,6 +46,7 @@ expression2
     : INT #int
     | DBL #double
     | ID #variable
+    | STRING #string
     | AMPERSAND ID #variableAddress
     | LPAREN expression0 RPAREN #parenthesis
     ;
