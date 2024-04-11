@@ -112,7 +112,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	) {
 		switch (declaredVariablesAndValues.get(ctx.ID().getText()).getValue()) {
 			case Double -> programParts.add(
-					codeGenerationFacade.assign(ctx.ID().getText(), "%f".formatted(expression.evaluate()))
+					codeGenerationFacade.assign(ctx.ID().getText(), "%f".formatted(expression.evaluate()) )
 			);
 			case Integer32 -> programParts.add(
 					codeGenerationFacade.assign(

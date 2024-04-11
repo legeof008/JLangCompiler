@@ -5,19 +5,9 @@ import com.jlang.llvm.variables.VariableType;
 public class IOIntermediaryCodeGenerator implements IOGenerator {
 
 	private static final String REGISTRY_SYMBOL = "%";
-	private int registry;
-
-	public IOIntermediaryCodeGenerator(int registry) {
-		this.registry = registry;
-	}
 
 	@Override
-	public int getRegistry() {
-		return registry;
-	}
-
-	@Override
-	public String printf(String id, VariableType variableType) {
+	public String printf(String id, VariableType variableType, int registry) {
 		return (
 			"%s = load %s, ptr %s\n".formatted(
 					REGISTRY_SYMBOL + registry++,
@@ -34,11 +24,11 @@ public class IOIntermediaryCodeGenerator implements IOGenerator {
 	}
 
 	@Override
-	public String scanf(String id, VariableType variableType) {
+	public String scanf(String id, VariableType variableType, int registry) {
 		return """
                 %s = call i32 (ptr, ...) @__isoc99_scanf(ptr noundef @.str%s, ptr noundef %s)
                 """.formatted(
-				REGISTRY_SYMBOL + registry++,
+				REGISTRY_SYMBOL + registry,
 				variableType.getLlvmStringPointer(),
 				REGISTRY_SYMBOL + id
 			);
