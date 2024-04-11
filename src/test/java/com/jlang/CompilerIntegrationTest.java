@@ -37,6 +37,8 @@ no to mamy z rowne 2
 z bedzie drodzy panstwo 3
 y bedzie drodzy panstwo 2.5 + 0.1 - (1.0 * 5.0)
 no to mamy u rowne 2.5 * y
+nazachodziejest(u)
+nazachodziejest(2+2)
 """,
 					"variable declaration"
 				)

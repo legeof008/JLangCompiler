@@ -9,14 +9,21 @@ program: (statement | NL)* EOF;
 statement
     : variable_declaration
     | variable_assignment
-//    | function_call #functionCall
+    | function_call
+    ;
+
+function_call
+    : ID LPAREN ( argument_list? ) RPAREN #functionCall
+    ;
+
+argument_list
+    : expression0 ( COMMA expression0 )*
     ;
 
 variable_declaration
     : VAR_DECLARATION ID TYPE_DECLARATION INT_TYPE #intDeclaration
     | VAR_DECLARATION ID TYPE_DECLARATION DOUBLE_TYPE #realDeclaration
     | VAR_DECLARATION ID ASSIGNMENT_DECLARATION expression0 #variableDeclarationWithAssignment
-//    |
     ;
 
 variable_assignment
@@ -41,62 +48,6 @@ expression2
     | ID #variable
     | LPAREN expression0 RPAREN #parenthesis
     ;
-
-//variable_assignment
-//    : VAR_DECLARATION ID ASSIGNMENT_DECLARATION (
-//        NUMBER
-//        |
-//        arithmetic_statement
-//      )
-//    ;
-//
-//arithmetic_assignment
-//    : ID ARITHMETIC_ASSIGNMENT arithmetic_statement
-//    ;
-//
-//arithmetic_statement
-//    : arithmetic_term ((PLUS | MINUS) arithmetic_term)*
-//    ;
-//
-//arithmetic_term
-//    : arithmetic_factor ((TIMES | DIVIDE) arithmetic_factor)*
-//    ;
-//
-//arithmetic_factor
-//    : NUMBER
-//    | ID
-//    | LPAREN arithmetic_statement RPAREN
-//    ;
-//
-//function_call
-//    : ID LPAREN argument_list? RPAREN
-//    ;
-//
-//argument_list
-//    : expr (COMMA expr)*
-//    ;
-//
-//expr
-//    : ID
-//    | NUMBER
-//    | STRING
-//    | func
-//    | NOT expr
-//    | expr AND expr
-//    | expr OR expr
-//    | arithmetic_statement
-//    ;
-//
-//func
-//    : ID LPAREN argument_list? RPAREN
-//    ;
-//
-/**
- * Lexer Rules
- */
-
-//NUMBER_TYPE : INT_TYPE | REAL_TYPE ;
-//NUMBER : INT | DBL ;
 
 INT_TYPE: 'intem';
 DOUBLE_TYPE: 'rzeczywiste' ;

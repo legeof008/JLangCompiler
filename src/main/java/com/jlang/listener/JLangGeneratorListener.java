@@ -13,6 +13,7 @@ import com.jlang.llvm.variables.Value;
 import com.jlang.llvm.variables.VariableType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -192,14 +193,80 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var id = ctx.ID().getText();
 		if (!variables.containsKey(id)) {
 			errorsList.add(
-					new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
+				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
 			);
 			return;
 		}
 		var type = variables.get(id);
 		var load = codeGenerationFacade.load(id, type);
 		programParts.add(load._2());
+
 		stack.push(new Value(load._1.value(), type));
+	}
+
+	@Override
+	public void exitFunctionCall(JlangParser.FunctionCallContext ctx) {
+		String functionName = ctx.ID().getText();
+		List<Value> arguments = new ArrayList<>();
+		for (JlangParser.Expression0Context ignored : ctx.argument_list().expression0()) {
+			arguments.add(stack.pop());
+		}
+		Collections.reverse(arguments); // Reverse the arguments because they are in reverse order on the stack
+
+		switch (functionName) {
+			case "nazachodziejest":
+				handlePrintFunction(arguments);
+				break;
+			case "lewarekazapraweucho":
+				handleReadFunction(arguments);
+				break;
+			default:
+				errorsList.add(
+					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+				);
+		}
+	}
+
+	private void handlePrintFunction(List<Value> arguments) {
+		for (Value argument : arguments) {
+			String printfFormat =
+				switch (argument.type()) {
+					case INTEGER_32 -> "@.str.1";
+					case DOUBLE -> "@.str";
+				};
+			final var printfCode = String.format(
+				"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
+				printfFormat,
+				argument.type().getLlvmVariableNameLiteral(),
+				argument.value()
+			);
+			programParts.add(printfCode);
+		}
+	}
+
+	private void handleReadFunction(List<Value> arguments) {
+		for (Value argument : arguments) {
+			if (!variables.containsKey(argument.value())) {
+				errorsList.add(
+					new CompilationLogicError("Variable " + argument.value() + " is not declared", -1)
+				);
+				return;
+			}
+			String scanfFormat =
+				switch (argument.type()) {
+					case INTEGER_32 -> "@.str.1";
+					case DOUBLE -> "@.str";
+				};
+			String scanfCode =
+				"call i32 (i8*, ...) @__isoc99_scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* " +
+				scanfFormat +
+				", i32 0, i32 0), " +
+				argument.type().getLlvmVariableNameLiteral() +
+				"* " +
+				argument.value() +
+				")";
+			programParts.add(scanfCode);
+		}
 	}
 
 	public String getLLVMOutput() {
