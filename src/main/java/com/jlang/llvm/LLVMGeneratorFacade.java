@@ -130,12 +130,20 @@ public class LLVMGeneratorFacade {
 	}
 
 	public Tuple2<Value, String> load(String id, VariableType type) {
-		var load =
-				Tuple.of(
-						Value.atRegistry(registry, type),
-						"%%%d = load %s, %s* %%%s".formatted(registry, type.getLlvmVariableNameLiteral(), type.getLlvmVariableNameLiteral(), id)
-				);
+		var load = Tuple.of(
+			Value.atRegistry(registry, type),
+			"%%%d = load %s, %s* %%%s".formatted(
+					registry,
+					type.getLlvmVariableNameLiteral(),
+					type.getLlvmVariableNameLiteral(),
+					id
+				)
+		);
 		registry++;
 		return load;
+	}
+
+	public void incrementRegistry() {
+		registry++;
 	}
 }

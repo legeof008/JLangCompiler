@@ -228,45 +228,58 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	}
 
 	private void handlePrintFunction(List<Value> arguments) {
-		for (Value argument : arguments) {
-			String printfFormat =
-				switch (argument.type()) {
-					case INTEGER_32 -> "@.str.1";
-					case DOUBLE -> "@.str";
-				};
-			final var printfCode = String.format(
-				"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
-				printfFormat,
-				argument.type().getLlvmVariableNameLiteral(),
-				argument.value()
+		if (arguments.size() != 1) {
+			errorsList.add(
+				new CompilationLogicError("The nazachodziejest function accepts only one argument", -1)
 			);
-			programParts.add(printfCode);
+			return;
 		}
+
+		Value argument = arguments.getFirst();
+		String printfFormat =
+			switch (argument.type()) {
+				case INTEGER_32 -> "@.str.1";
+				case DOUBLE -> "@.str";
+			};
+		final var printfCode = String.format(
+			"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
+			printfFormat,
+			argument.type().getLlvmVariableNameLiteral(),
+			argument.value()
+		);
+		programParts.add(printfCode);
+		codeGenerationFacade.incrementRegistry();
 	}
 
 	private void handleReadFunction(List<Value> arguments) {
-		for (Value argument : arguments) {
-			if (!variables.containsKey(argument.value())) {
-				errorsList.add(
-					new CompilationLogicError("Variable " + argument.value() + " is not declared", -1)
-				);
-				return;
-			}
-			String scanfFormat =
-				switch (argument.type()) {
-					case INTEGER_32 -> "@.str.1";
-					case DOUBLE -> "@.str";
-				};
-			String scanfCode =
-				"call i32 (i8*, ...) @__isoc99_scanf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* " +
-				scanfFormat +
-				", i32 0, i32 0), " +
-				argument.type().getLlvmVariableNameLiteral() +
-				"* " +
-				argument.value() +
-				")";
-			programParts.add(scanfCode);
+		if (arguments.size() != 1) {
+			errorsList.add(
+				new CompilationLogicError("The lewarekazapraweucho function accepts only one argument", -1)
+			);
+			return;
 		}
+
+		Value argument = arguments.getFirst();
+		if (!variables.containsKey(argument.value())) { // this fails
+			errorsList.add(
+				new CompilationLogicError("Variable " + argument.value() + " is not declared", -1)
+			);
+			return;
+		}
+
+		String scanfFormat =
+			switch (variables.get(argument.value())) {
+				case INTEGER_32 -> "@.str.3";
+				case DOUBLE -> "@.str.4";
+			};
+		final var scanfCode = String.format(
+			"call i32 (i8*, ...) @__isoc99_scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
+			scanfFormat,
+			variables.get(argument.value()).getLlvmVariableNameLiteral(),
+			argument.value()
+		);
+		programParts.add(scanfCode);
+		codeGenerationFacade.incrementRegistry();
 	}
 
 	public String getLLVMOutput() {
