@@ -269,11 +269,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 		String scanfFormat =
 			switch (variables.get(argument.value())) {
-				case INTEGER_32 -> "@.str.3";
-				case DOUBLE -> "@.str.4";
+				case INTEGER_32 -> "@.str.4";
+				case DOUBLE -> "@.str.3";
 			};
 		final var scanfCode = String.format(
-			"call i32 (i8*, ...) @__isoc99_scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
+			"call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
 			scanfFormat,
 			variables.get(argument.value()).getLlvmVariableNameLiteral(),
 			argument.value()

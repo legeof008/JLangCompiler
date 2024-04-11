@@ -34,7 +34,7 @@ class ProgramInitHelper {
 	 */
 	static final String PRINTF_SCANF_DECLERATIONS =
 		"""
-                            declare i32 @__isoc99_scanf(ptr noundef, ...) #1
+                            declare i32 @scanf(ptr noundef, ...) #1
                             declare i32 @printf(ptr noundef, ...) #1
                     """.trim();
 }
