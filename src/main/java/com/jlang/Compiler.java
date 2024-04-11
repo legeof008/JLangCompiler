@@ -3,10 +3,13 @@ package com.jlang;
 import com.jlang.antlr.JlangBaseListener;
 import com.jlang.antlr.JlangLexer;
 import com.jlang.antlr.JlangParser;
-import com.jlang.error.ConsoleErrorLoggingBackend;
-import com.jlang.error.ErrorLoggingBackend;
+import com.jlang.error.ConsoleErrorContext;
+import com.jlang.error.ErrorContext;
 import com.jlang.error.JErrorListener;
+import com.jlang.listener.JLangGeneratorListener;
+import com.jlang.llvm.LLVMGeneratorFacade;
 import io.vavr.control.Either;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -17,44 +20,47 @@ import org.antlr.v4.runtime.tree.ParseTreeWalker;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Compiler {
 
-    @NonNull
-    private final ErrorLoggingBackend errorLoggingBackend;
+	@NonNull
+	private final ErrorContext errorContext;
 
-    public static Compiler withDefaults() {
-        return new Compiler(
-                new ConsoleErrorLoggingBackend()
-        );
-    }
+	public static Compiler withDefaults() {
+		return new Compiler(new ConsoleErrorContext());
+	}
 
-    public static Compiler withLogging(@NonNull ErrorLoggingBackend errorLoggingBackend) {
-        return new Compiler(errorLoggingBackend);
-    }
+	public static Compiler withLogging(@NonNull ErrorContext errorContext) {
+		return new Compiler(errorContext);
+	}
 
-    // TODO: Errors?
-    public Either<Failure, Output> compile(@NonNull CharStream input) {
-        final var parser = getParserFor(input);
-        parser.removeErrorListeners();
-        parser.addErrorListener(JErrorListener.builder().errorLoggingBackend(errorLoggingBackend).build());
+	// TODO: Errors?
+	public Either<Failure, Output> compile(@NonNull CharStream input) {
+		final var parser = getParserFor(input);
+		parser.removeErrorListeners();
+		parser.addErrorListener(JErrorListener.builder().errorContext(errorContext).build());
 
-        final var ast = parser.program();
-        final var walker = new ParseTreeWalker();
-        final var listener = new JlangBaseListener(); // TODO: Implement listener
+		final var ast = parser.program();
+		final var walker = new ParseTreeWalker();
 
-        walker.walk(listener, ast);
+		final var codeGenerationFacade = new LLVMGeneratorFacade();
+		final var listener = new JLangGeneratorListener(codeGenerationFacade); // TODO: Implement listener
 
-        // TODO: Get LLVM IR from listener
-        return Either.right(new Output("implement me!")); // TODO: Return LLVM IR or failure
-    }
+		walker.walk(listener, ast);
 
-    private static JlangParser getParserFor(CharStream input) {
-        final var lexer = new JlangLexer(input);
-        final var tokens = new CommonTokenStream(lexer);
-        return new JlangParser(tokens);
-    }
+		final var errors = errorContext.getErrors();
+		if (!errors.isEmpty()) {
+			return Either.left(new Failure(errors));
+		}
 
-    public record Output(String output) {
-    }
+		// TODO: Get LLVM IR from listener
+		return Either.right(new Output(listener.getLLVMOutput()));
+	}
 
-    public record Failure(String message) {
-    }
+	private static JlangParser getParserFor(CharStream input) {
+		final var lexer = new JlangLexer(input);
+		final var tokens = new CommonTokenStream(lexer);
+		return new JlangParser(tokens);
+	}
+
+	public record Output(@NonNull String output) {}
+
+	public record Failure(@NonNull List<String> messages) {}
 }

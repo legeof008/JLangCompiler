@@ -1,72 +1,78 @@
 package com.jlang;
 
-import com.jlang.error.ErrorLoggingBackend;
+import static org.assertj.vavr.api.VavrAssertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.of;
+
+import com.jlang.error.AssertingErrorContext;
+import java.util.stream.Stream;
 import org.antlr.v4.runtime.CharStreams;
-import org.assertj.core.api.Assertions;
-import org.assertj.vavr.api.VavrAssertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.params.provider.Arguments.of;
-
 class CompilerIntegrationTest {
 
-    private final AssertingErrorLoggingBackend assertingErrorLoggingBackend = new AssertingErrorLoggingBackend();
-    private Compiler compiler;
+	private Compiler compiler;
 
-    @BeforeEach
-    void setUp() {
-        compiler = Compiler.withLogging(
-                assertingErrorLoggingBackend
-        );
-    }
+	@Nested
+	class Valid {
 
-    private static Stream<Arguments> testCompileValid() {
-        return Stream.of(
-                of("no to mamy x co jest intem"),
-                of("no to mamy x co jest intem\n")
-                // of("no  to  mamy  x  co  jest  intem\n") // TODO #14: Fix: Unexpected error reported by analysis: line 1:27 no viable alternative at input 'jestintem'
-        );
-    }
+		private final AssertingErrorContext assertingErrorLoggingBackend = new AssertingErrorContext();
 
-    @ParameterizedTest
-    @MethodSource
-    void testCompileValid(String rawInput) {
-        var input = CharStreams.fromString(rawInput);
-        var output = compiler.compile(input);
+		@BeforeEach
+		void setUp() {
+			compiler = Compiler.withLogging(assertingErrorLoggingBackend);
+		}
 
-        VavrAssertions.assertThat(output)
-                .isRight();
-    }
+		private static Stream<Arguments> testCompileValid() {
+			return Stream.of(
+				of(
+					"no to mamy x co jest rzeczywiste\nlewarekazapraweucho(x)\nx bedzie drodzy panstwo x + 1\nnazachodziemamy(x)",
+					"variable declaration"
+				)
+			);
+		}
 
-    private static Stream<Arguments> testCompileWithError() {
-        return Stream.of(
-                of("nno to mamy x co jest intem")
-        );
-    }
+		@ParameterizedTest
+		@MethodSource
+		void testCompileValid(String rawInput, String description) {
+			// given
+			var input = CharStreams.fromString(rawInput);
 
-    @ParameterizedTest
-    @MethodSource
-    @Disabled("#13")
-    void testCompileWithError(String rawInput) {
-        compiler = Compiler.withDefaults(); // Do not fail if error encountered
-        var input = CharStreams.fromString(rawInput);
-        var output = compiler.compile(input);
+			// when
+			var output = compiler.compile(input);
 
-        VavrAssertions.assertThat(output)
-                .isLeft();
-    }
+			// then
+			assertThat(output).as(description).isRight();
+		}
+	}
 
-    private static class AssertingErrorLoggingBackend implements ErrorLoggingBackend {
+	@Nested
+	class Invalid {
 
-        @Override
-        public void accept(String message) {
-            Assertions.fail("Unexpected error reported by analysis: " + message);
-        }
-    }
+		@BeforeEach
+		void setUp() {
+			compiler = Compiler.withDefaults();
+		}
+
+		private static Stream<Arguments> testCompileWithError() {
+			return Stream.of(of("nno to mamy x co jest intem"));
+		}
+
+		@ParameterizedTest
+		@MethodSource
+		//        @Disabled("#13")
+		void testCompileWithError(String rawInput) {
+			// given
+			var input = CharStreams.fromString(rawInput);
+
+			// when
+			var output = compiler.compile(input);
+
+			// then
+			assertThat(output).isLeft();
+		}
+	}
 }

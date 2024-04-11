@@ -1,0 +1,12 @@
+{
+  "name": "JLangComp",
+  "version": "0.0.0",
+  "scripts": {
+    "check": "npx prettier --check .",
+    "format": "npx prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^2.8.0",
+    "prettier-plugin-java": "^1.6.2"
+  }
+}
