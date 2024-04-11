@@ -9,12 +9,19 @@ import org.antlr.v4.runtime.Recognizer;
 @Builder
 public class JErrorListener extends BaseErrorListener {
 
-    @NonNull
-    private ErrorContext errorContext;
+	@NonNull
+	private ErrorContext errorContext;
 
-    @Override
-    public void syntaxError(@NonNull Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, @NonNull String msg, RecognitionException e) {
-        var err = String.format("line %d:%d %s", line, charPositionInLine, msg);
-        errorContext.accept(err);
-    }
+	@Override
+	public void syntaxError(
+		@NonNull Recognizer<?, ?> recognizer,
+		Object offendingSymbol,
+		int line,
+		int charPositionInLine,
+		@NonNull String msg,
+		RecognitionException e
+	) {
+		var err = String.format("line %d:%d %s", line, charPositionInLine, msg);
+		errorContext.accept(err);
+	}
 }
