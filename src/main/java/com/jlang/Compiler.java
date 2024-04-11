@@ -1,6 +1,5 @@
 package com.jlang;
 
-import com.jlang.antlr.JlangBaseListener;
 import com.jlang.antlr.JlangLexer;
 import com.jlang.antlr.JlangParser;
 import com.jlang.error.ConsoleErrorContext;
@@ -48,6 +47,19 @@ public class Compiler {
 		final var errors = errorContext.getErrors();
 		if (!errors.isEmpty()) {
 			return Either.left(new Failure(errors));
+		}
+
+		// uhhh
+		final var compilationErrors = listener.getErrorsList();
+		if (!compilationErrors.isEmpty()) {
+			return Either.left(
+				new Failure(
+					compilationErrors
+						.stream()
+						.map(err -> String.format("Error at line %d: %s", err.line(), err.message()))
+						.toList()
+				)
+			);
 		}
 
 		// TODO: Get LLVM IR from listener

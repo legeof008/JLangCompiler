@@ -1,33 +1,39 @@
 package com.jlang.listener;
 
-import static com.jlang.listener.ArithmeticHelper.*;
-import static com.jlang.listener.IOHelper.*;
-import static com.jlang.listener.ProgramInitHelper.*;
+import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_END;
+import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_START;
+import static com.jlang.listener.ProgramInitHelper.PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION;
+import static com.jlang.listener.ProgramInitHelper.PRINTF_SCANF_DECLERATIONS;
 
 import com.jlang.antlr.JlangBaseListener;
 import com.jlang.antlr.JlangParser;
 import com.jlang.error.CompilationLogicError;
 import com.jlang.llvm.LLVMGeneratorFacade;
+import com.jlang.llvm.variables.Value;
 import com.jlang.llvm.variables.VariableType;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.objecthunter.exp4j.Expression;
-import net.objecthunter.exp4j.ExpressionBuilder;
+import lombok.Getter;
 
 public class JLangGeneratorListener extends JlangBaseListener {
 
 	private final LLVMGeneratorFacade codeGenerationFacade;
 	private final List<String> programParts;
-	private final Map<String, Map.Entry<String, VariableType>> declaredVariablesAndValues;
+	private final Map<String, VariableType> variables;
+	private final Deque<Value> stack;
+
+	@Getter
 	private final List<CompilationLogicError> errorsList;
 
 	public JLangGeneratorListener(LLVMGeneratorFacade codeGenerationFacade) {
 		this.codeGenerationFacade = codeGenerationFacade;
 		this.programParts = new ArrayList<>();
-		this.declaredVariablesAndValues = new HashMap<>();
+		this.variables = new HashMap<>();
+		this.stack = new ArrayDeque<>();
 		this.errorsList = new ArrayList<>();
 	}
 
@@ -44,83 +50,156 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	}
 
 	@Override
-	public void enterVariable_declaration(JlangParser.Variable_declarationContext ctx) {
-		var variableTypeAntlrName = ctx.NUMBER_TYPE().getText();
-
-		declaredVariablesAndValues.put(
-				ctx.ID().getText(),
-				Map.entry("UNKNOWN", VariableType.map(variableTypeAntlrName))
-		);
-
-		programParts.add(
-				codeGenerationFacade.declare(ctx.ID().getText(), VariableType.map(variableTypeAntlrName))
-		);
+	public void exitInt(JlangParser.IntContext ctx) {
+		stack.push(new Value(ctx.getText(), VariableType.INTEGER_32));
 	}
 
 	@Override
-	public void enterArithmetic_assignment(JlangParser.Arithmetic_assignmentContext ctx) {
-		if (hasKnownValueVariableTokensinsideArithmeticExpression(declaredVariablesAndValues, ctx)) {
-
-			var expression = new ExpressionBuilder(ctx.arithmetic_statement().getText())
-					.variables(declaredVariablesAndValues.keySet())
-					.build();
-			declaredVariablesAndValues
-					.keySet()
-					.forEach(setVariablesInExpression(declaredVariablesAndValues, expression));
-			addLineDependingOnDataType(ctx, expression);
-		} else if (hasValueVariableTokensinsideArithmeticExpression(declaredVariablesAndValues, ctx)) {
-
-
-		} else {
-			var expression = new ExpressionBuilder(ctx.arithmetic_statement().getText()).build();
-			addLineDependingOnDataType(ctx, expression);
-		}
+	public void exitDouble(JlangParser.DoubleContext ctx) {
+		stack.push(new Value(ctx.getText(), VariableType.DOUBLE));
 	}
 
 	@Override
-	public void enterFunction_call(JlangParser.Function_callContext ctx) {
-		if (
-				allVariablesInArgumentsPreviouslyDeclared(declaredVariablesAndValues, ctx) &&
-						onlyOneVariableHandlingRestrictionMet(ctx)
-		) {
-			handleSingleArgumentOperations(ctx);
-		}
+	public void exitIntDeclaration(JlangParser.IntDeclarationContext ctx) {
+		String variableName = ctx.ID().getText();
+		programParts.add(codeGenerationFacade.declare(variableName, VariableType.INTEGER_32));
+		variables.put(variableName, VariableType.INTEGER_32);
 	}
 
-	private void handleSingleArgumentOperations(JlangParser.Function_callContext ctx) {
-		if (isStdPrintfOperation(ctx)) {
-			programParts.add(
-					codeGenerationFacade.printf(
-							ctx.argument_list().getText(),
-							declaredVariablesAndValues.get(ctx.argument_list().getText()).getValue()
-					)
-			);
-		}
-		if (isStdScanfOperation(ctx)) {
-			programParts.add(
-					codeGenerationFacade.scanf(
-							ctx.argument_list().getText(),
-							declaredVariablesAndValues.get(ctx.argument_list().getText()).getValue()
-					)
-			);
-		}
+	@Override
+	public void exitRealDeclaration(JlangParser.RealDeclarationContext ctx) {
+		String variableName = ctx.ID().getText();
+		programParts.add(codeGenerationFacade.declare(variableName, VariableType.DOUBLE));
+		variables.put(variableName, VariableType.DOUBLE);
 	}
 
-	private void addLineDependingOnDataType(
-			JlangParser.Arithmetic_assignmentContext ctx,
-			Expression expression
+	@Override
+	public void exitVariableDeclarationWithAssignment(
+		JlangParser.VariableDeclarationWithAssignmentContext ctx
 	) {
-		switch (declaredVariablesAndValues.get(ctx.ID().getText()).getValue()) {
-			case Double -> programParts.add(
-					codeGenerationFacade.assign(ctx.ID().getText(), "%f".formatted(expression.evaluate()))
+		var id = ctx.ID().getText();
+		var value = stack.pop();
+		programParts.add(codeGenerationFacade.declare(id, value.type()));
+		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+		variables.put(id, value.type());
+	}
+
+	@Override
+	public void exitVariableAssignment(JlangParser.VariableAssignmentContext ctx) {
+		var id = ctx.ID().getText();
+		var value = stack.pop();
+		if (!variables.containsKey(id)) {
+			errorsList.add(
+				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
 			);
-			case Integer32 -> programParts.add(
-					codeGenerationFacade.assign(
-							ctx.ID().getText(),
-							"%d".formatted(Math.round(expression.evaluate()))
-					)
-			);
+			return;
 		}
+		if (variables.get(id) != value.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Variable " +
+					id +
+					" is of type " +
+					variables.get(id) +
+					" but value is of type " +
+					value.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+	}
+
+	@Override
+	public void exitAddition(JlangParser.AdditionContext ctx) {
+		var right = stack.pop();
+		var left = stack.pop();
+		if (left.type() != right.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Addition of different types: " + left.type() + " and " + right.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		var add = codeGenerationFacade.add(left.value(), right.value(), left.type());
+		programParts.add(add._2());
+
+		stack.push(new Value(add._1.value(), left.type()));
+	}
+
+	@Override
+	public void exitSubtraction(JlangParser.SubtractionContext ctx) {
+		var right = stack.pop();
+		var left = stack.pop();
+		if (left.type() != right.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Subtraction of different types: " + left.type() + " and " + right.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		var add = codeGenerationFacade.sub(left.value(), right.value(), left.type());
+		programParts.add(add._2());
+
+		stack.push(new Value(add._1.value(), left.type()));
+	}
+
+	@Override
+	public void exitMultiplication(JlangParser.MultiplicationContext ctx) {
+		var right = stack.pop();
+		var left = stack.pop();
+		if (left.type() != right.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Multiplication of different types: " + left.type() + " and " + right.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		var add = codeGenerationFacade.mul(left.value(), right.value(), left.type());
+		programParts.add(add._2());
+
+		stack.push(new Value(add._1.value(), left.type()));
+	}
+
+	@Override
+	public void exitDivision(JlangParser.DivisionContext ctx) {
+		var right = stack.pop();
+		var left = stack.pop();
+		if (left.type() != right.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Division of different types: " + left.type() + " and " + right.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		var add = codeGenerationFacade.div(left.value(), right.value(), left.type());
+		programParts.add(add._2());
+
+		stack.push(new Value(add._1.value(), left.type()));
+	}
+
+	@Override
+	public void exitVariable(JlangParser.VariableContext ctx) {
+		var id = ctx.ID().getText();
+		if (!variables.containsKey(id)) {
+			errorsList.add(
+					new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
+			);
+			return;
+		}
+		var type = variables.get(id);
+		var load = codeGenerationFacade.load(id, type);
+		programParts.add(load._2());
+		stack.push(new Value(load._1.value(), type));
 	}
 
 	public String getLLVMOutput() {

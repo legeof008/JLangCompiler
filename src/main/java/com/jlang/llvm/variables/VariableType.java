@@ -8,16 +8,16 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum VariableType {
-	Integer32("i32", ".3"),
-	Double("double", ".1");
+	INTEGER_32("i32", ".3"),
+	DOUBLE("double", ".1");
 
 	private final String llvmVariableNameLiteral;
 	private final String llvmStringPointer;
 	private static final Map<String, VariableType> mapOfAntlrNameToVariableType = Map.of(
 		"intem",
-		Integer32,
+		INTEGER_32,
 		"rzeczywiste",
-		Double
+		DOUBLE
 	);
 
 	public static VariableType map(String antlrTypeName) {

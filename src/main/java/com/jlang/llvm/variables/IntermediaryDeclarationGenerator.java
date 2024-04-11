@@ -1,5 +1,7 @@
 package com.jlang.llvm.variables;
 
+import lombok.NonNull;
+
 public class IntermediaryDeclarationGenerator implements DeclarationGenerator {
 
 	private static final String REGISTRY_SYMBOL = "%";
@@ -16,12 +18,12 @@ public class IntermediaryDeclarationGenerator implements DeclarationGenerator {
 	}
 
 	@Override
-	public String declare(String id, VariableType type) {
-		return "%s = alloca %s\n".formatted(REGISTRY_SYMBOL + id, type.getLlvmVariableNameLiteral());
+	public String declare(@NonNull String id, @NonNull VariableType type) {
+		return "%s = alloca %s%n".formatted(REGISTRY_SYMBOL + id, type.getLlvmVariableNameLiteral());
 	}
 
 	@Override
-	public String assign(String id, String value) {
+	public String assign(@NonNull String id, @NonNull String value, @NonNull VariableType type) {
 		return "store i32 %s, ptr %s".formatted(value, REGISTRY_SYMBOL + id);
 	}
 }
