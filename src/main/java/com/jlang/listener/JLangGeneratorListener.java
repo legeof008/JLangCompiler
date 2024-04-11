@@ -282,6 +282,20 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		codeGenerationFacade.incrementRegistry();
 	}
 
+	@Override
+	public void exitVariableAddress(JlangParser.VariableAddressContext ctx) {
+		var id = ctx.ID().getText();
+		if (!variables.containsKey(id)) {
+			errorsList.add(
+				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
+			);
+			return;
+		}
+
+		// Instead of loading the variable into a register, we just push the variable name onto the stack
+		stack.push(new Value(id, variables.get(id)));
+	}
+
 	public String getLLVMOutput() {
 		return String.join("\n", programParts);
 	}

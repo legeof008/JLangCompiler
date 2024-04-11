@@ -46,6 +46,7 @@ expression2
     : INT #int
     | DBL #double
     | ID #variable
+    | AMPERSAND ID #variableAddress
     | LPAREN expression0 RPAREN #parenthesis
     ;
 
@@ -70,6 +71,7 @@ RPAREN : ')' ;
 LCURLY : '{' ;
 RCURLY : '}' ;
 PT : '.' ;
+AMPERSAND : '&' ;
 
 INT : [0-9]+ ;
 DBL : [0-9]+ '.' [0-9]+ ;
