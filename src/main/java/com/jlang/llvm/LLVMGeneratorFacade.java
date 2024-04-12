@@ -20,6 +20,10 @@ public class LLVMGeneratorFacade {
 		return "%%%s = alloca %s".formatted(id, type.getLlvmVariableNameLiteral());
 	}
 
+	public String declare(String id, String type) {
+		return "%%%s = alloca %s".formatted(id, type);
+	}
+
 	public String assign(String id, String value, VariableType type) {
 		return "store %s %s, %s* %%%s".formatted(
 				type.getLlvmVariableNameLiteral(),
@@ -32,16 +36,14 @@ public class LLVMGeneratorFacade {
 	public String createConstantString(String originalVariableId, String value) {
 		return "@__const.main.str.%s = private unnamed_addr constant [255 x i8] c\"%s\"".formatted(
 				originalVariableId,
-				value.length(),
-				value
+				padString(value, 255)
 			);
 	}
 
-	public String assign(String id, String constantId, int constantValueLength) {
-		return "  call void @llvm.memcpy.p0.p0.i64(ptr align 16 %%%s, ptr align 16 @__const.main.str.%s, i64 %d, i1 false)".formatted(
+	public String assign(String id, String constantId) {
+		return "  call void @llvm.memcpy.p0.p0.i64(ptr align 8 %%%s, ptr align 8 @__const.main.str.%s, i64 255, i1 false)".formatted(
 				id,
-				constantId,
-				constantValueLength
+				constantId
 			);
 	}
 
@@ -171,6 +173,14 @@ public class LLVMGeneratorFacade {
 		);
 		registry++;
 		return load;
+	}
+
+	public static String padString(String input, int length) {
+		if (input.length() >= length) {
+			return input.substring(0, length);
+		} else {
+			return input + "\\00".repeat(length - input.length());
+		}
 	}
 
 	public void incrementRegistry() {

@@ -87,8 +87,8 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var value = stack.pop();
 		if (value.type() == VariableType.STRING) {
 			programParts.addFirst(codeGenerationFacade.createConstantString(id, value.value()));
-			programParts.add(codeGenerationFacade.declare(id, value.type()));
-			programParts.add(codeGenerationFacade.assign(id, id, value.value().length()));
+			programParts.add(codeGenerationFacade.declare(id, "[255 x i8]"));
+			programParts.add(codeGenerationFacade.assign(id, id));
 		} else {
 			programParts.add(codeGenerationFacade.declare(id, value.type()));
 			programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
@@ -258,13 +258,18 @@ public class JLangGeneratorListener extends JlangBaseListener {
 				case DOUBLE -> "@.str";
 				case STRING -> "@.str.5";
 			};
+		final var printfCodeForStrings = String.format(
+				"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([255 x i8], [255 x i8]* %s, i32 0, i32 0), i8* %s)",
+				printfFormat,
+				argument.value()
+		);
 		final var printfCode = String.format(
 			"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
 			printfFormat,
 			argument.type().getLlvmVariableNameLiteral(),
 			argument.value()
 		);
-		programParts.add(printfCode);
+		programParts.add(argument.type() == VariableType.STRING ? printfCodeForStrings : printfCode);
 		codeGenerationFacade.incrementRegistry();
 	}
 
