@@ -31,7 +31,7 @@ class CompilerIntegrationTest {
 			return Stream.of(
 				of(
 					"""
-no to mamy m rowne 'dupa'
+no to mamy m rowne 'czumpiradlo okrutne 2'
 nazachodziejest(m)
 no to mamy x co jest intem
 no to mamy y co jest rzeczywiste
