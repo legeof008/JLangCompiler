@@ -1,5 +1,6 @@
 plugins {
     id 'io.freefair.lombok' version '8.6'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'java'
     id 'antlr'
 }
@@ -33,6 +34,7 @@ dependencies {
     compile 'org.antlr:antlr4-runtime:4.13.1'
 
     implementation 'io.vavr:vavr:0.10.4'
+    implementation 'net.objecthunter:exp4j:0.4.8'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation 'org.assertj:assertj-core:3.25.1'
@@ -58,5 +60,13 @@ tasks {
 
     test {
         useJUnitPlatform()
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.jlang.Main'
+        )
     }
 }
