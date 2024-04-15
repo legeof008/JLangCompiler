@@ -1,12 +1,11 @@
-package com.jlang;
+package com.jlang.compiler;
 
 import static org.assertj.vavr.api.VavrAssertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
-import com.jlang.compiler.Compiler;
 import com.jlang.error.AssertingErrorContext;
+import java.io.ByteArrayInputStream;
 import java.util.stream.Stream;
-import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -14,9 +13,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class CompilerIntegrationTest {
+//TODO#21 - Add tests.
+class AntlrCompilerIntegrationTest {
 
-	private Compiler compiler;
+	private AntlrCompiler antlrCompiler;
 
 	@Nested
 	class Valid {
@@ -25,7 +25,7 @@ class CompilerIntegrationTest {
 
 		@BeforeEach
 		void setUp() {
-			compiler = Compiler.withLogging(assertingErrorLoggingBackend);
+			antlrCompiler = AntlrCompiler.withLogging(assertingErrorLoggingBackend);
 		}
 
 		private static Stream<Arguments> testCompileValid() {
@@ -55,10 +55,10 @@ nazachodziejest(z)
 		@MethodSource
 		void testCompileValid(String rawInput, String description) {
 			// given
-			var input = CharStreams.fromString(rawInput);
+			var input = new ByteArrayInputStream(rawInput.getBytes());
 
 			// when
-			var output = compiler.compile(input);
+			var output = antlrCompiler.compile(input);
 
 			// then
 			assertThat(output).as(description).isRight();
@@ -71,7 +71,7 @@ nazachodziejest(z)
 
 		@BeforeEach
 		void setUp() {
-			compiler = Compiler.withDefaults();
+			antlrCompiler = AntlrCompiler.withDefaults();
 		}
 
 		private static Stream<Arguments> testCompileWithError() {
@@ -80,13 +80,12 @@ nazachodziejest(z)
 
 		@ParameterizedTest
 		@MethodSource
-		//        @Disabled("#13")
 		void testCompileWithError(String rawInput) {
 			// given
-			var input = CharStreams.fromString(rawInput);
+			var input = new ByteArrayInputStream(rawInput.getBytes());
 
 			// when
-			var output = compiler.compile(input);
+			var output = antlrCompiler.compile(input);
 
 			// then
 			assertThat(output).isLeft();

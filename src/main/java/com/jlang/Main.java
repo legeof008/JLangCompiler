@@ -1,8 +1,10 @@
 package com.jlang;
 
 import com.jlang.compiler.Compiler;
+import com.jlang.compiler.CompilerFactory;
 import io.vavr.control.Either;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.antlr.v4.runtime.CharStreams;
@@ -14,8 +16,8 @@ public class Main {
 		String filePath = args[0];
 
 		final var contents = CharStreams.fromFileName(filePath);
-		final var compiler = Compiler.withDefaults();
-		final var result = compiler.compile(contents);
+		final var compiler = CompilerFactory.createWithDefaults();
+		final var result = compiler.compile((InputStream) contents);
 
 		if (result.isRight()) {
 			saveResult(result, filePath);
