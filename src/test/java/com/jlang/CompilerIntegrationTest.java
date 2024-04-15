@@ -3,6 +3,7 @@ package com.jlang;
 import static org.assertj.vavr.api.VavrAssertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
+import com.jlang.compiler.Compiler;
 import com.jlang.error.AssertingErrorContext;
 import java.util.stream.Stream;
 import org.antlr.v4.runtime.CharStreams;

@@ -1,5 +1,6 @@
 package com.jlang;
 
+import com.jlang.compiler.Compiler;
 import io.vavr.control.Either;
 import java.io.IOException;
 import java.nio.file.Files;

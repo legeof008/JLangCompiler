@@ -1,4 +1,4 @@
-package com.jlang;
+package com.jlang.compiler;
 
 import com.jlang.antlr.JlangLexer;
 import com.jlang.antlr.JlangParser;
@@ -30,7 +30,6 @@ public class Compiler {
 		return new Compiler(errorContext);
 	}
 
-	// TODO: Errors?
 	public Either<Failure, Output> compile(@NonNull CharStream input) {
 		final var parser = getParserFor(input);
 		parser.removeErrorListeners();
@@ -40,7 +39,7 @@ public class Compiler {
 		final var walker = new ParseTreeWalker();
 
 		final var codeGenerationFacade = new LLVMGeneratorFacade();
-		final var listener = new JLangGeneratorListener(codeGenerationFacade); // TODO: Implement listener
+		final var listener = new JLangGeneratorListener(codeGenerationFacade);
 
 		walker.walk(listener, ast);
 
@@ -49,7 +48,7 @@ public class Compiler {
 			return Either.left(new Failure(errors));
 		}
 
-		// uhhh
+		// TODO#21 - Gather compilation errors from listener
 		final var compilationErrors = listener.getErrorsList();
 		if (!compilationErrors.isEmpty()) {
 			return Either.left(
@@ -62,7 +61,6 @@ public class Compiler {
 			);
 		}
 
-		// TODO: Get LLVM IR from listener
 		return Either.right(new Output(listener.getLLVMOutput()));
 	}
 
