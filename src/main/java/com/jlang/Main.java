@@ -2,6 +2,8 @@ package com.jlang;
 
 import com.jlang.compiler.Compiler;
 import com.jlang.compiler.CompilerFactory;
+import com.jlang.llvm.llc.LLCCompilationStatus;
+import com.jlang.llvm.llc.LLCProcess;
 import io.vavr.control.Either;
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,12 +14,12 @@ import org.antlr.v4.runtime.CharStreams;
 public class Main {
 
 	// TODO#15 - better CLI handling
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException {
 		String filePath = args[0];
 
 		final var contents = CharStreams.fromFileName(filePath);
 		final var compiler = CompilerFactory.createWithDefaults();
-		final var result = compiler.compile((InputStream) contents);
+		final var result = compiler.compile(contents);
 
 		if (result.isRight()) {
 			saveResult(result, filePath);
@@ -32,11 +34,22 @@ public class Main {
 	}
 
 	private static void saveResult(Either<Compiler.Failure, Compiler.Output> result, String filePath)
-		throws IOException {
+			throws IOException, InterruptedException {
 		System.out.println("Compilation successful");
 		final var compiledCode = result.get();
 		final var compiledFilePath = filePath.replace(".j", ".ll");
 		Files.writeString(Path.of(compiledFilePath), compiledCode.output());
 		System.out.println("Compiled code saved to " + compiledFilePath);
+		compileToObjectFile(compiledFilePath);
+	}
+
+	private static void compileToObjectFile(String llFilePath) throws IOException, InterruptedException {
+		var llcCompiler = new LLCProcess();
+		var compilationResult = llcCompiler.compileToObjectFile(llFilePath);
+		if (compilationResult == LLCCompilationStatus.SUCCESS) {
+			System.out.println("Object file has been generated.");
+		} else {
+			System.out.println("Object file could not be generated.");
+		}
 	}
 }

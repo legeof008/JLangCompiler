@@ -6,6 +6,8 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 import com.jlang.error.AssertingErrorContext;
 import java.io.ByteArrayInputStream;
 import java.util.stream.Stream;
+
+import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +57,7 @@ nazachodziejest(z)
 		@MethodSource
 		void testCompileValid(String rawInput, String description) {
 			// given
-			var input = new ByteArrayInputStream(rawInput.getBytes());
+			var input = CharStreams.fromString(rawInput);
 
 			// when
 			var output = antlrCompiler.compile(input);
@@ -82,7 +84,7 @@ nazachodziejest(z)
 		@MethodSource
 		void testCompileWithError(String rawInput) {
 			// given
-			var input = new ByteArrayInputStream(rawInput.getBytes());
+			var input = CharStreams.fromString(rawInput);
 
 			// when
 			var output = antlrCompiler.compile(input);

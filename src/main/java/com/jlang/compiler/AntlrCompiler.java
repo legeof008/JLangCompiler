@@ -13,6 +13,7 @@ import java.io.InputStream;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
@@ -31,7 +32,7 @@ class AntlrCompiler implements Compiler {
 		return new AntlrCompiler(errorContext);
 	}
 
-	public Either<Failure, Output> compile(@NonNull InputStream input) {
+	public Either<Failure, Output> compile(@NonNull CharStream input) {
 		final var parser = getParserFor(input);
 		parser.removeErrorListeners();
 		parser.addErrorListener(JErrorListener.builder().errorContext(errorContext).build());
@@ -65,13 +66,9 @@ class AntlrCompiler implements Compiler {
 		return Either.right(new Output(listener.getLLVMOutput()));
 	}
 
-	private static JlangParser getParserFor(InputStream input) {
+	private static JlangParser getParserFor(CharStream input) {
 		final JlangLexer lexer;
-		try {
-			lexer = new JlangLexer(CharStreams.fromStream(input));
-		} catch (IOException e) {
-			throw new RuntimeException(e); //TODO#22 - Handle exception
-		}
+		lexer = new JlangLexer(input);
 		final var tokens = new CommonTokenStream(lexer);
 		return new JlangParser(tokens);
 	}
