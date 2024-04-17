@@ -13,22 +13,16 @@ import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 
 public class JLangGeneratorListener extends JlangBaseListener {
 
 	private final LLVMGeneratorFacade codeGenerationFacade;
 	private final List<String> programParts;
-	private final Map<String, Type> variables;
 	private final Scope scope;
-	private final Deque<Value> stack;
 
 	@Getter
 	private final List<CompilationLogicError> errorsList;
@@ -36,8 +30,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public JLangGeneratorListener(LLVMGeneratorFacade codeGenerationFacade) {
 		this.codeGenerationFacade = codeGenerationFacade;
 		this.programParts = new ArrayList<>();
-		this.variables = new HashMap<>();
-		this.stack = new ArrayDeque<>();
 		this.errorsList = new ArrayList<>();
 		this.scope = Scope.global();
 	}
@@ -59,19 +51,16 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void exitInt(JlangParser.IntContext ctx) {
 		scope.pushValueOnStack(new Value(ctx.getText(), Type.INTEGER_32));
-		stack.push(new Value(ctx.getText(), Type.INTEGER_32));
 	}
 
 	@Override
 	public void exitDouble(JlangParser.DoubleContext ctx) {
 		scope.pushValueOnStack(new Value(ctx.getText(), Type.DOUBLE));
-		stack.push(new Value(ctx.getText(), Type.DOUBLE));
 	}
 
 	@Override
 	public void exitString(JlangParser.StringContext ctx) {
 		scope.pushValueOnStack(new Value(ctx.getText(), Type.STRING));
-		stack.push(new Value(ctx.getText(), Type.STRING));
 	}
 
 	@Override
@@ -79,7 +68,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, Type.INTEGER_32));
 		scope.addSymbol(new Symbol(variableName, Type.INTEGER_32));
-		variables.put(variableName, Type.INTEGER_32);
 	}
 
 	@Override
@@ -87,7 +75,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, Type.DOUBLE));
 		scope.addSymbol(new Symbol(variableName, Type.DOUBLE));
-		variables.put(variableName, Type.DOUBLE);
 	}
 
 	@Override
@@ -95,8 +82,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		JlangParser.VariableDeclarationWithAssignmentContext ctx
 	) {
 		var id = ctx.ID().getText();
-		var value = stack.pop();
-		value = scope.popValueFromStack();
+		var value = scope.popValueFromStack();
 		if (value.type() == Type.STRING) {
 			programParts.addFirst(codeGenerationFacade.createConstantString(id, value.value()));
 			programParts.add(codeGenerationFacade.declare(id, "[255 x i8]"));
@@ -105,15 +91,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			programParts.add(codeGenerationFacade.declare(id, value.type()));
 			programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
 		}
-		variables.put(id, value.type());
 		scope.addSymbol(new Symbol(id, value.type()));
 	}
 
 	@Override
 	public void exitVariableAssignment(JlangParser.VariableAssignmentContext ctx) {
 		var id = ctx.ID().getText();
-		var value = stack.pop();
-		value = scope.popValueFromStack();
+		var value = scope.popValueFromStack();
 		var symbol = scope.findSymbolInCurrentScope(id);
 		if (symbol.isEmpty()) {
 			errorsList.add(
@@ -127,7 +111,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 					"Variable " +
 					id +
 					" is of type " +
-					variables.get(id) +
+					symbol.get().type() +
 					" but value is of type " +
 					value.type(),
 					ctx.start.getLine()
@@ -154,7 +138,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.add(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
 		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -174,7 +157,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.sub(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
 		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -194,7 +176,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.mul(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
 		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -214,7 +195,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.div(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
 		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -237,7 +217,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 		programParts.add(load._2());
 
-		stack.push(new Value(load._1.value(), type.get()));
 		scope.pushValueOnStack(new Value(load._1.value(), type.get()));
 	}
 
@@ -337,8 +316,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		// Instead of loading the variable into a register, we just push the variable name onto the stack
-		stack.push(new Value(id, variables.get(id)));
-		scope.pushValueOnStack(new Value(id, variables.get(id)));
+		scope.pushValueOnStack(new Value(id, scope.findSymbolInCurrentScope(id).get().type())); //TODO - this looks bad
 	}
 
 	public String getLLVMOutput() {

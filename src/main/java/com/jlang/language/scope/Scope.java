@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
 
-	private final Scope parent;
+	private final Scope parent; //TODO when we implement /better/ scoping
 	private final Deque<Value> stack = new ArrayDeque<>();
 	private final Set<Symbol> symbols = new HashSet<>();
 
