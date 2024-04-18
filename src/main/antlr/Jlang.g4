@@ -24,7 +24,7 @@ function_call
     ;
 
 function_declaration
-    : function_signature scoped_body #functionDeclaration
+    : function_signature scoped_body_with_return #functionDeclaration
     ;
 
 function_signature
@@ -69,6 +69,15 @@ arithmetic_logical_expression
 
 scoped_body
     : SCOPE_BEGIN (statement | NL)* SCOPE_END #scopeDecleration
+    ;
+
+scoped_body_with_return
+    : SCOPE_BEGIN (statement | NL)* return_value SCOPE_END #scopeWithReturnDecleration
+    ;
+
+return_value
+    : RETURN_SEQUENCE RETURN_VOID #returnVoid
+    | RETURN_SEQUENCE ID #returnVariable
     ;
 
 argument_list
@@ -119,6 +128,7 @@ ASSIGNMENT_DECLARATION: 'rowne' ;
 ARITHMETIC_ASSIGNMENT: 'bedzie drodzy panstwo' ;
 FUNCTION_DECLARATION_PREFIX: 'ciach ciach';
 RETURN_SEQUENCE: 'pach pach' ;
+RETURN_VOID: 'nic';
 SCOPE_BEGIN: 'tu jest start';
 SCOPE_END: 'no i tyle';
 LOOP_SEQUENCE: 'tak w kolo';
