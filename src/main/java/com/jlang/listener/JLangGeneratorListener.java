@@ -1,5 +1,6 @@
 package com.jlang.listener;
 
+import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_END;
 import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_START;
 import static com.jlang.listener.ProgramInitHelper.PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION;
 import static com.jlang.listener.ProgramInitHelper.PRINTF_SCANF_DECLERATIONS;
@@ -33,6 +34,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		this.errorsList = new ArrayList<>();
 		this.globalScope = Scope.global();
 		this.currentScope = globalScope;
+		this.localScopes = new ArrayList<>();
 	}
 
 	//TODO: Refactor all of the wierd usages of optional in methods below
@@ -40,25 +42,18 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void enterProgram(JlangParser.ProgramContext ctx) {
 		programParts.add(PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION);
+		programParts.add(MAIN_FUNCTION_START);
 	}
 
 	@Override
 	public void exitProgram(JlangParser.ProgramContext ctx) {
+		programParts.add(MAIN_FUNCTION_END);
 		programParts.add(PRINTF_SCANF_DECLERATIONS);
 	}
 
 	@Override
 	public void exitInt(JlangParser.IntContext ctx) {
 		currentScope.pushValueOnStack(new Value(ctx.getText(), Type.INTEGER_32));
-	}
-
-	@Override
-	public void exitBoolean(JlangParser.BooleanContext ctx) {
-		if (ctx.getText().equals("prawda")) {
-			currentScope.pushValueOnStack(new Value("1", Type.BOOLEAN));
-		} else {
-			currentScope.pushValueOnStack(new Value("0", Type.BOOLEAN));
-		}
 	}
 
 	@Override
@@ -70,57 +65,37 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public void exitString(JlangParser.StringContext ctx) {
 		currentScope.pushValueOnStack(new Value(ctx.getText(), Type.STRING));
 	}
-
 	@Override
 	public void enterIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {
 		var functionName = ctx.ID().getText();
-
-		if (functionName.equals("main")) {
-			programParts.add(MAIN_FUNCTION_START);
-			return;
-		}
-
 		programParts.add(codeGenerationFacade.declareIntFunction(functionName));
-		if (currentScope.equals(globalScope)) {
-			currentScope.addSymbol(new Symbol(functionName, Type.INT_FUNCTION));
-			currentScope = Scope.childNoCopy(currentScope);
-		} else {
-			errorsList.add(
-				new CompilationLogicError("Cannot declare functions within functions or limited scopes", -1)
-			);
+		if(currentScope.equals(globalScope)){
+			currentScope.addSymbol(new Symbol(functionName,Type.INT_FUNCTION));
+			currentScope = Scope.child(currentScope);
 		}
+		else {
+			errorsList.add(new CompilationLogicError("Cannot declare functions within functions or limited scopes",-1));
+		}
+	}
+	@Override
+	public void exitIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {
+
+
 	}
 
 	@Override
-	public void exitIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {}
+	public void enterScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
 
-	@Override
-	public void enterScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {}
-
+	}
 	@Override
 	public void exitScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
 		currentScope = currentScope.getParent();
 	}
 
 	@Override
-	public void exitReturnVariable(JlangParser.ReturnVariableContext ctx) {
-		//TODO handle return with actual variable thingie
-		var symbolNameInReturnExpression = ctx.ID().getText();
-		var contextSymbol = currentScope.findSymbolInCurrentScope(symbolNameInReturnExpression);
-		if (contextSymbol.isDefined()) {
-			var symbol = contextSymbol.get();
-			var loadTouple = codeGenerationFacade.load(symbol.name(), symbol.type());
-			programParts.add(loadTouple._2);
-			programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
-		} else {
-			errorsList.add(
-				new CompilationLogicError("Return unknown variable: " + symbolNameInReturnExpression, -1)
-			);
-		}
+	public void exitFunctionDeclaration(JlangParser.FunctionDeclarationContext ctx) {
+		programParts.add(codeGenerationFacade.endIntFunction());
 	}
-
-	@Override
-	public void exitFunctionDeclaration(JlangParser.FunctionDeclarationContext ctx) {}
 
 	@Override
 	public void exitIntDeclaration(JlangParser.IntDeclarationContext ctx) {
@@ -134,13 +109,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, Type.DOUBLE));
 		currentScope.addSymbol(new Symbol(variableName, Type.DOUBLE));
-	}
-
-	@Override
-	public void exitBooleanDeclaration(JlangParser.BooleanDeclarationContext ctx) {
-		String variableName = ctx.ID().getText();
-		programParts.add(codeGenerationFacade.declare(variableName, Type.BOOLEAN));
-		currentScope.addSymbol(new Symbol(variableName, Type.BOOLEAN));
 	}
 
 	@Override
@@ -277,7 +245,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 		var load =
 			switch (type.get()) {
-				case DOUBLE, INTEGER_32, BOOLEAN -> codeGenerationFacade.load(id, type.get());
+				case DOUBLE, INTEGER_32 -> codeGenerationFacade.load(id, type.get());
 				case STRING -> codeGenerationFacade.loadString(id, 16, type.get());
 				case null, default -> null;
 			};
@@ -323,7 +291,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (argument.type()) {
 				case INTEGER_32 -> "@.str.1";
 				case DOUBLE -> "@.str";
-				case BOOLEAN -> "@.str.0";
 				case STRING -> "@.str.5";
 				case INT_FUNCTION -> null;
 			};
@@ -362,18 +329,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (currentScope.findSymbolInCurrentScope(argument.value()).get().type()) {
 				case INTEGER_32 -> "@.str.4";
 				case DOUBLE -> "@.str.3";
-				case BOOLEAN -> "@.str.6";
 				case STRING -> ""; //TODO#20
 				case INT_FUNCTION -> null;
 			};
 		final var scanfCode = String.format(
 			"call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
 			scanfFormat,
-			currentScope
-				.findSymbolInCurrentScope(argument.value())
-				.get()
-				.type()
-				.getLlvmVariableNameLiteral(),
+			currentScope.findSymbolInCurrentScope(argument.value()).get().type().getLlvmVariableNameLiteral(),
 			argument.value()
 		);
 		programParts.add(scanfCode);
@@ -391,9 +353,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		// Instead of loading the variable into a register, we just push the variable name onto the stack
-		currentScope.pushValueOnStack(
-			new Value(id, currentScope.findSymbolInCurrentScope(id).get().type())
-		); //TODO - this looks bad
+		currentScope.pushValueOnStack(new Value(id, currentScope.findSymbolInCurrentScope(id).get().type())); //TODO - this looks bad
 	}
 
 	public String getLLVMOutput() {

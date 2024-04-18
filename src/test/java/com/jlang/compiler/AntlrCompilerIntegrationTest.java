@@ -6,7 +6,6 @@ import static org.junit.jupiter.params.provider.Arguments.of;
 import com.jlang.error.AssertingErrorContext;
 import java.io.ByteArrayInputStream;
 import java.util.stream.Stream;
-
 import org.antlr.v4.runtime.CharStreams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -34,10 +33,13 @@ class AntlrCompilerIntegrationTest {
 			return Stream.of(
 				of(
 					"""
-no to mamy z co jest intem
-ciach ciach funkcja ( no to mamy x co jest intem ) co jest intem tu jest start
-no to mamy y rowne 1.2
-no i tyle
+ciach ciach main () co jest intem tu jest start
+no to mamy y rowne 1
+no to mamy c rowne 1 + y
+no to mamy m rowne 'c wychodzi:'
+nazachodziejest(m)
+nazachodziejest(c)
+pach pach c no i tyle
 """,
 					"variable declaration"
 				)
