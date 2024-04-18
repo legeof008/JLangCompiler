@@ -11,11 +11,14 @@ public enum Type {
 	INTEGER_32("i32", ".3"),
 	DOUBLE("double", ".1"),
 	STRING("i8*", ".5"),
-	INT_FUNCTION("","");
+	INT_FUNCTION("", ""),
+	BOOLEAN("i1", ".0");
 
 	private final String llvmVariableNameLiteral;
 	private final String llvmStringPointer;
 	private static final Map<String, Type> mapOfAntlrNameToVariableType = Map.of(
+		"logiczne",
+		BOOLEAN,
 		"intem",
 		INTEGER_32,
 		"rzeczywiste",

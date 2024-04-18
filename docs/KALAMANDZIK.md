@@ -27,6 +27,7 @@ JLang posiada następujące typy zmiennych:
 - `sztring` - napis (deklarowany przez użycie cudzysłowów)
 - `intem` - liczba całkowita (i32)
 - `rzeczywiste` - liczba podwójnej precyzji (double)
+- `logiczne` - wartość logiczna (prawda/klamstwo)
 
 Deklaracja zmiennej może ale nie musi zawierać przypisania:
 
@@ -50,7 +51,7 @@ W JLang arytmetyka działa jak w większości języków programowania i może by
 ```jlang
 no to mamy a rowne 2 + 2
 no to mamy b rowne a * 2
-a bedzie a + 1
+a bedzie drodzy panstwo a + 1
 ```
 
 Odczytywanie wartości ze zmiennej odbywa się zatem poprzez użycie jej nazwy.
