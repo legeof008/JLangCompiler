@@ -10,11 +10,20 @@ statement
     : variable_declaration
     | variable_assignment
     | function_call
+    | function_declaration
     ;
 
 function_call
     : ID LPAREN ( argument_list? ) RPAREN #functionCall
     ;
+
+function_declaration
+    : function_signature SCOPE_BEGIN (statement | NL)* SCOPE_END #functionDeclaration
+    ;
+
+function_signature
+     : FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN #functionSignature
+     ;
 
 argument_list
     : expression0 ( COMMA expression0 )*
@@ -61,6 +70,11 @@ VAR_DECLARATION: 'no to mamy';
 TYPE_DECLARATION: 'co jest' ;
 ASSIGNMENT_DECLARATION: 'rowne' ;
 ARITHMETIC_ASSIGNMENT: 'bedzie drodzy panstwo' ;
+FUNCTION_DECLARATION_PREFIX: 'ciach ciach';
+RETURN_SEQUENCE: 'pach pach' ;
+SCOPE_BEGIN: 'tu jest start';
+SCOPE_END: 'no i tyle';
+
 
 PLUS : '+' ;
 MINUS : '-' ;
@@ -77,6 +91,7 @@ LCURLY : '{' ;
 RCURLY : '}' ;
 PT : '.' ;
 AMPERSAND : '&' ;
+
 
 INT : [0-9]+ ;
 DBL : [0-9]+ '.' [0-9]+ ;
