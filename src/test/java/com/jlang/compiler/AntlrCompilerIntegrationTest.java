@@ -33,6 +33,10 @@ class AntlrCompilerIntegrationTest {
 			return Stream.of(
 				of(
 					"""
+ciach ciach niemejn () co jest intem tu jest start
+no to mamy z rowne 1
+pach pach z no i tyle
+
 ciach ciach main () co jest intem tu jest start
 no to mamy y rowne 1
 no to mamy c rowne 1 + y
