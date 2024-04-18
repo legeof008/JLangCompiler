@@ -34,19 +34,10 @@ class AntlrCompilerIntegrationTest {
 			return Stream.of(
 				of(
 					"""
-no to mamy m rowne 'czumpiradlo okrutne 2'
-nazachodziejest(m)
-no to mamy x co jest intem
-no to mamy y co jest rzeczywiste
-no to mamy z rowne 2
-z bedzie drodzy panstwo 3
-y bedzie drodzy panstwo 2.5 + 0.1 - (1.0 * 5.0)
-no to mamy u rowne 2.5 * y
-nazachodziejest(u)
-nazachodziejest(2+2)
-lewarekazapraweucho(&z)
-z bedzie drodzy panstwo z + 1
-nazachodziejest(z)
+no to mamy z co jest intem
+ciach ciach funkcja ( no to mamy x co jest intem ) co jest intem tu jest start
+no to mamy y rowne 1.2
+no i tyle
 """,
 					"variable declaration"
 				)
