@@ -141,7 +141,6 @@ TIMES : '*' ;
 DIVIDE : '/' ;
 AND : 'i' ;
 OR : 'albo' ;
-NOT : 'na pewno nie' ;
 EQ : '==' ;
 COMMA : ',' ;
 LPAREN : '(' ;
