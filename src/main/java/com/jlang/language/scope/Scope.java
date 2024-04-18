@@ -15,12 +15,14 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
+
 	@Getter
 	private final Scope parent; //TODO when we implement /better/ scoping
+
 	@Getter(value = AccessLevel.PRIVATE)
 	private final Deque<Value> stack = new ArrayDeque<>();
-	@Getter(value = AccessLevel.PRIVATE)
 
+	@Getter(value = AccessLevel.PRIVATE)
 	private final Set<Symbol> symbols = new HashSet<>();
 
 	public static Scope global() {
@@ -38,6 +40,11 @@ public class Scope {
 		var childScope = new Scope(parent);
 		childScope.stack.addAll(parent.stack);
 		childScope.symbols.addAll(parent.symbols);
+		return childScope;
+	}
+
+	public static Scope childNoCopy(Scope parent) {
+		var childScope = new Scope(parent);
 		return childScope;
 	}
 

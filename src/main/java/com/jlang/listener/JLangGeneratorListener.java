@@ -13,6 +13,7 @@ import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +25,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	private final List<String> programParts;
 	private final Scope globalScope;
 	private Scope currentScope;
-	private final List<Scope> localScopes;
 
 	@Getter
 	private final List<CompilationLogicError> errorsList;
@@ -35,7 +35,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		this.errorsList = new ArrayList<>();
 		this.globalScope = Scope.global();
 		this.currentScope = globalScope;
-		this.localScopes = new ArrayList<>();
 	}
 
 	//TODO: Refactor all of the wierd usages of optional in methods below
@@ -43,12 +42,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void enterProgram(JlangParser.ProgramContext ctx) {
 		programParts.add(PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION);
-		programParts.add(MAIN_FUNCTION_START);
 	}
 
 	@Override
 	public void exitProgram(JlangParser.ProgramContext ctx) {
-		programParts.add(MAIN_FUNCTION_END);
 		programParts.add(PRINTF_SCANF_DECLERATIONS);
 	}
 
@@ -66,37 +63,55 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public void exitString(JlangParser.StringContext ctx) {
 		currentScope.pushValueOnStack(new Value(ctx.getText(), Type.STRING));
 	}
+
 	@Override
 	public void enterIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {
 		var functionName = ctx.ID().getText();
+
+		if (functionName.equals("main")) {
+			programParts.add(MAIN_FUNCTION_START);
+			return;
+		}
+
 		programParts.add(codeGenerationFacade.declareIntFunction(functionName));
-		if(currentScope.equals(globalScope)){
-			currentScope.addSymbol(new Symbol(functionName,Type.INT_FUNCTION));
-			currentScope = Scope.child(currentScope);
+		if (currentScope.equals(globalScope)) {
+			currentScope.addSymbol(new Symbol(functionName, Type.INT_FUNCTION));
+			currentScope = Scope.childNoCopy(currentScope);
+		} else {
+			errorsList.add(
+				new CompilationLogicError("Cannot declare functions within functions or limited scopes", -1)
+			);
 		}
-		else {
-			errorsList.add(new CompilationLogicError("Cannot declare functions within functions or limited scopes",-1));
-		}
-	}
-	@Override
-	public void exitIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {
-
-
 	}
 
 	@Override
-	public void enterScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
+	public void exitIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {}
 
-	}
+	@Override
+	public void enterScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {}
+
 	@Override
 	public void exitScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
 		currentScope = currentScope.getParent();
 	}
 
 	@Override
-	public void exitFunctionDeclaration(JlangParser.FunctionDeclarationContext ctx) {
-		programParts.add(codeGenerationFacade.endIntFunction());
+	public void exitReturnVariable(JlangParser.ReturnVariableContext ctx) {
+		//TODO handle return with actual variable thingie
+		var symbolNameInReturnExpression = ctx.ID().getText();
+		var contextSymbol = currentScope.findSymbolInCurrentScope(symbolNameInReturnExpression);
+		if (contextSymbol.isDefined()) {
+			var symbol = contextSymbol.get();
+			var loadTouple = codeGenerationFacade.load(symbol.name(),symbol.type());
+			programParts.add(loadTouple._2);
+			programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
+		} else {
+			errorsList.add(new CompilationLogicError("Return unknown variable: " + symbolNameInReturnExpression, -1));
+		}
 	}
+
+	@Override
+	public void exitFunctionDeclaration(JlangParser.FunctionDeclarationContext ctx) {}
 
 	@Override
 	public void exitIntDeclaration(JlangParser.IntDeclarationContext ctx) {
@@ -336,7 +351,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		final var scanfCode = String.format(
 			"call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
 			scanfFormat,
-			currentScope.findSymbolInCurrentScope(argument.value()).get().type().getLlvmVariableNameLiteral(),
+			currentScope
+				.findSymbolInCurrentScope(argument.value())
+				.get()
+				.type()
+				.getLlvmVariableNameLiteral(),
 			argument.value()
 		);
 		programParts.add(scanfCode);
@@ -354,7 +373,9 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		// Instead of loading the variable into a register, we just push the variable name onto the stack
-		currentScope.pushValueOnStack(new Value(id, currentScope.findSymbolInCurrentScope(id).get().type())); //TODO - this looks bad
+		currentScope.pushValueOnStack(
+			new Value(id, currentScope.findSymbolInCurrentScope(id).get().type())
+		); //TODO - this looks bad
 	}
 
 	public String getLLVMOutput() {
