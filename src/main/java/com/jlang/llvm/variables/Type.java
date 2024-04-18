@@ -11,7 +11,8 @@ public enum Type {
 	INTEGER_32("i32", ".3"),
 	DOUBLE("double", ".1"),
 	STRING("i8*", ".5"),
-	INT_FUNCTION("", ""),
+	INT_FUNCTION("i32", null),
+	VOID_FUNCTION("void", null),
 	BOOLEAN("i1", ".0");
 
 	private final String llvmVariableNameLiteral;

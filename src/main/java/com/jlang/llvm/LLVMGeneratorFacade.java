@@ -24,9 +24,16 @@ public class LLVMGeneratorFacade {
 		return "define i32 @" + id + "() nounwind {\n";
 	}
 
+	public String declareVoidFunction(String id) {
+		return "define void @" + id + "() nounwind {\n";
+	}
+
 	public String endIntFunction(String value) {
-		// TODO: handle returning actual values
 		return "ret i32 " + value + "\n}\n";
+	}
+
+	public String endVoidFunction() {
+		return "ret void \n}\n";
 	}
 
 	public String declare(String id, String type) {
@@ -182,6 +189,20 @@ public class LLVMGeneratorFacade {
 		);
 		registry++;
 		return load;
+	}
+
+	public Tuple2<Value, String> callFunctionNoArgs(String functionName, Type functionType) {
+		var callFunctionLine = functionType == Type.VOID_FUNCTION
+			? "call %s @%s()".formatted(functionType.getLlvmVariableNameLiteral(), functionName)
+			: "%%%d = call %s @%s()".formatted(
+					registry,
+					functionType.getLlvmVariableNameLiteral(),
+					functionName
+				);
+		var call = Tuple.of(Value.atRegistry(registry, functionType), callFunctionLine);
+
+		registry++;
+		return call;
 	}
 
 	public static String padString(String input, int length) {

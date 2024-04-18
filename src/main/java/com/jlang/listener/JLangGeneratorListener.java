@@ -12,9 +12,7 @@ import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import lombok.Getter;
 
 public class JLangGeneratorListener extends JlangBaseListener {
@@ -23,6 +21,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	private final List<String> programParts;
 	private final Scope globalScope;
 	private Scope currentScope;
+	private Queue<Type> currentFunctionReturnType;
 
 	@Getter
 	private final List<CompilationLogicError> errorsList;
@@ -33,6 +32,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		this.errorsList = new ArrayList<>();
 		this.globalScope = Scope.global();
 		this.currentScope = globalScope;
+		this.currentFunctionReturnType = new ArrayDeque<>();
 	}
 
 	//TODO: Refactor all of the wierd usages of optional in methods below
@@ -74,6 +74,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void enterIntFunctionDeclaration(JlangParser.IntFunctionDeclarationContext ctx) {
 		var functionName = ctx.ID().getText();
+		currentFunctionReturnType.add(Type.INT_FUNCTION);
 
 		if (functionName.equals("main")) {
 			programParts.add(MAIN_FUNCTION_START);
@@ -84,6 +85,24 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		if (currentScope.equals(globalScope)) {
 			currentScope.addSymbol(new Symbol(functionName, Type.INT_FUNCTION));
 			currentScope = Scope.childNoCopy(currentScope);
+			currentScope.addSymbol(new Symbol(functionName, Type.INT_FUNCTION));
+		} else {
+			errorsList.add(
+				new CompilationLogicError("Cannot declare functions within functions or limited scopes", -1)
+			);
+		}
+	}
+
+	@Override
+	public void enterVoidFunctionDeclaration(JlangParser.VoidFunctionDeclarationContext ctx) {
+		var functionName = ctx.ID().getText();
+		currentFunctionReturnType.add(Type.VOID_FUNCTION);
+
+		programParts.add(codeGenerationFacade.declareVoidFunction(functionName));
+		if (currentScope.equals(globalScope)) {
+			currentScope.addSymbol(new Symbol(functionName, Type.VOID_FUNCTION));
+			currentScope = Scope.childNoCopy(currentScope);
+			currentScope.addSymbol(new Symbol(functionName, Type.VOID_FUNCTION));
 		} else {
 			errorsList.add(
 				new CompilationLogicError("Cannot declare functions within functions or limited scopes", -1)
@@ -111,12 +130,28 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			var symbol = contextSymbol.get();
 			var loadTouple = codeGenerationFacade.load(symbol.name(), symbol.type());
 			programParts.add(loadTouple._2);
-			programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
+			// TODO handle voids
+			var returnType = currentFunctionReturnType.remove();
+			if (returnType == Type.INT_FUNCTION) {
+				programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
+			}
 		} else {
 			errorsList.add(
 				new CompilationLogicError("Return unknown variable: " + symbolNameInReturnExpression, -1)
 			);
 		}
+	}
+
+	@Override
+	public void exitReturnVoid(JlangParser.ReturnVoidContext ctx) {
+		var returnType = currentFunctionReturnType.remove();
+		if (returnType != Type.VOID_FUNCTION) {
+			errorsList.add(
+				new CompilationLogicError("Return type does not align with function return type", -1)
+			);
+			return;
+		}
+		programParts.add(codeGenerationFacade.endVoidFunction());
 	}
 
 	@Override
@@ -304,9 +339,19 @@ public class JLangGeneratorListener extends JlangBaseListener {
 				handleReadFunction(arguments);
 				break;
 			default:
-				errorsList.add(
-					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
-				);
+				var possiblyExistingFunctionSymbol = currentScope.findSymbolInCurrentScope(functionName);
+				if (possiblyExistingFunctionSymbol.isDefined()) {
+					var functionSymbol = possiblyExistingFunctionSymbol.get();
+					var callFunction = codeGenerationFacade.callFunctionNoArgs(
+						functionSymbol.name(),
+						functionSymbol.type()
+					);
+					programParts.add(callFunction._2);
+				} else {
+					errorsList.add(
+						new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+					);
+				}
 		}
 	}
 
@@ -323,6 +368,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (argument.type()) {
 				case INTEGER_32 -> "@.str.1";
 				case DOUBLE -> "@.str";
+				case VOID_FUNCTION -> null;
 				case BOOLEAN -> "@.str.0";
 				case STRING -> "@.str.5";
 				case INT_FUNCTION -> null;
@@ -362,6 +408,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (currentScope.findSymbolInCurrentScope(argument.value()).get().type()) {
 				case INTEGER_32 -> "@.str.4";
 				case DOUBLE -> "@.str.3";
+				case VOID_FUNCTION -> null;
 				case BOOLEAN -> "@.str.6";
 				case STRING -> ""; //TODO#20
 				case INT_FUNCTION -> null;
