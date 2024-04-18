@@ -4,16 +4,60 @@ grammar Jlang;
  * Parser Rules
  */
 
-program: (statement | NL)* EOF;
+program: (extended_statement | NL)* EOF;
+
+extended_statement
+    : function_declaration
+    | statement
+    ;
 
 statement
     : variable_declaration
     | variable_assignment
     | function_call
+    | scoped_loop
+    | scoped_if_statement
     ;
 
 function_call
     : ID LPAREN ( argument_list? ) RPAREN #functionCall
+    ;
+
+function_declaration
+    : function_signature SCOPE_BEGIN (statement | NL)* SCOPE_END #functionDeclaration
+    ;
+
+function_signature
+     : FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN #functionSignature
+     ;
+
+scoped_loop
+    : LOOP_SEQUENCE scoped_body #loopDeclaration
+    ;
+
+scoped_if_statement
+    : IF_SEQUENCE logical_expression scoped_body #scopedifStatement
+    ;
+
+logical_expression
+    : logical_element ( AND logical_element )* #andExpression
+    | logical_element ( OR logical_element )* #orExpression
+    | logical_element ( EQ logical_element )* #eqExpression
+    ;
+
+logical_element
+    : ID
+    | FALSE
+    | TRUE
+    | arithmetic_logical_expression
+    ;
+
+arithmetic_logical_expression
+    : ID EQ expression0 #arithmeticLogicalExpression
+    ;
+
+scoped_body
+    : SCOPE_BEGIN (statement | NL)* SCOPE_END #scopeDecleration
     ;
 
 argument_list
@@ -61,15 +105,22 @@ VAR_DECLARATION: 'no to mamy';
 TYPE_DECLARATION: 'co jest' ;
 ASSIGNMENT_DECLARATION: 'rowne' ;
 ARITHMETIC_ASSIGNMENT: 'bedzie drodzy panstwo' ;
+FUNCTION_DECLARATION_PREFIX: 'ciach ciach';
+RETURN_SEQUENCE: 'pach pach' ;
+SCOPE_BEGIN: 'tu jest start';
+SCOPE_END: 'no i tyle';
+LOOP_SEQUENCE: 'tak w kolo';
+IF_SEQUENCE: 'gdyby tak';
+
 
 PLUS : '+' ;
 MINUS : '-' ;
 TIMES : '*' ;
 DIVIDE : '/' ;
-AND : 'and' ;
-OR : 'or' ;
-NOT : 'not' ;
-EQ : '=' ;
+AND : 'i' ;
+OR : 'albo' ;
+NOT : 'na pewno nie' ;
+EQ : '==' ;
 COMMA : ',' ;
 LPAREN : '(' ;
 RPAREN : ')' ;
@@ -77,6 +128,9 @@ LCURLY : '{' ;
 RCURLY : '}' ;
 PT : '.' ;
 AMPERSAND : '&' ;
+TRUE : 'prawda' ;
+FALSE : 'klamstwo' ;
+
 
 INT : [0-9]+ ;
 DBL : [0-9]+ '.' [0-9]+ ;
