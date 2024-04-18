@@ -10,10 +10,12 @@ class ProgramInitHelper {
 	static final String PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION =
 		"""
 				                @.str = private unnamed_addr constant [5 x i8] c"%lf\\0A\\00", align 1
+				                @.str.0 = private unnamed_addr constant [4 x i8] c"%d\\0A\\00", align 1
 				                @.str.1 = private unnamed_addr constant [4 x i8] c"%d\\0A\\00", align 1
 				                @.str.3 = private unnamed_addr constant [4 x i8] c"%lf\\00", align 1
 				                @.str.4 = private unnamed_addr constant [3 x i8] c"%d\\00", align 1
 								@.str.5 = private unnamed_addr constant [4 x i8] c"%s\\0A\\00", align 1
+								@.str.6 = private unnamed_addr constant [3 x i8] c"%s\\00", align 1
 				                """.trim();
 	/*
 	 * Starts the main function in llvm.

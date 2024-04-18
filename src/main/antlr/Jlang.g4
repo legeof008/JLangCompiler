@@ -87,6 +87,7 @@ argument_list
 variable_declaration
     : VAR_DECLARATION ID TYPE_DECLARATION INT_TYPE #intDeclaration
     | VAR_DECLARATION ID TYPE_DECLARATION DOUBLE_TYPE #realDeclaration
+    | VAR_DECLARATION ID TYPE_DECLARATION BOOLEAN_TYPE #booleanDeclaration
     | VAR_DECLARATION ID ASSIGNMENT_DECLARATION expression0 #variableDeclarationWithAssignment
     ;
 
@@ -109,10 +110,16 @@ expression1
 expression2
     : INT #int
     | DBL #double
+    | boolean #bool
     | ID #variable
     | STRING #string
     | AMPERSAND ID #variableAddress
     | LPAREN expression0 RPAREN #parenthesis
+    ;
+
+boolean:
+    | TRUE
+    | FALSE
     ;
 
 /**
@@ -122,6 +129,7 @@ expression2
 VOID_TYPE: 'wojdem';
 INT_TYPE: 'intem';
 DOUBLE_TYPE: 'rzeczywiste' ;
+BOOLEAN_TYPE: 'logiczne' ;
 VAR_DECLARATION: 'no to mamy';
 TYPE_DECLARATION: 'co jest' ;
 ASSIGNMENT_DECLARATION: 'rowne' ;

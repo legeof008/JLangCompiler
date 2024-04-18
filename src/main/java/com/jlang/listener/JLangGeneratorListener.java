@@ -1,6 +1,5 @@
 package com.jlang.listener;
 
-import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_END;
 import static com.jlang.listener.ProgramInitHelper.MAIN_FUNCTION_START;
 import static com.jlang.listener.ProgramInitHelper.PRINTF_AND_SCANF_UTILITY_STRINGS_DECLARATION;
 import static com.jlang.listener.ProgramInitHelper.PRINTF_SCANF_DECLERATIONS;
@@ -13,7 +12,6 @@ import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +50,15 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void exitInt(JlangParser.IntContext ctx) {
 		currentScope.pushValueOnStack(new Value(ctx.getText(), Type.INTEGER_32));
+	}
+
+	@Override
+	public void exitBoolean(JlangParser.BooleanContext ctx) {
+		if (ctx.getText().equals("prawda")) {
+			currentScope.pushValueOnStack(new Value("1", Type.BOOLEAN));
+		} else {
+			currentScope.pushValueOnStack(new Value("0", Type.BOOLEAN));
+		}
 	}
 
 	@Override
@@ -102,11 +109,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var contextSymbol = currentScope.findSymbolInCurrentScope(symbolNameInReturnExpression);
 		if (contextSymbol.isDefined()) {
 			var symbol = contextSymbol.get();
-			var loadTouple = codeGenerationFacade.load(symbol.name(),symbol.type());
+			var loadTouple = codeGenerationFacade.load(symbol.name(), symbol.type());
 			programParts.add(loadTouple._2);
 			programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
 		} else {
-			errorsList.add(new CompilationLogicError("Return unknown variable: " + symbolNameInReturnExpression, -1));
+			errorsList.add(
+				new CompilationLogicError("Return unknown variable: " + symbolNameInReturnExpression, -1)
+			);
 		}
 	}
 
@@ -125,6 +134,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, Type.DOUBLE));
 		currentScope.addSymbol(new Symbol(variableName, Type.DOUBLE));
+	}
+
+	@Override
+	public void exitBooleanDeclaration(JlangParser.BooleanDeclarationContext ctx) {
+		String variableName = ctx.ID().getText();
+		programParts.add(codeGenerationFacade.declare(variableName, Type.BOOLEAN));
+		currentScope.addSymbol(new Symbol(variableName, Type.BOOLEAN));
 	}
 
 	@Override
@@ -261,7 +277,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 		var load =
 			switch (type.get()) {
-				case DOUBLE, INTEGER_32 -> codeGenerationFacade.load(id, type.get());
+				case DOUBLE, INTEGER_32, BOOLEAN -> codeGenerationFacade.load(id, type.get());
 				case STRING -> codeGenerationFacade.loadString(id, 16, type.get());
 				case null, default -> null;
 			};
@@ -307,6 +323,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (argument.type()) {
 				case INTEGER_32 -> "@.str.1";
 				case DOUBLE -> "@.str";
+				case BOOLEAN -> "@.str.0";
 				case STRING -> "@.str.5";
 				case INT_FUNCTION -> null;
 			};
@@ -345,6 +362,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (currentScope.findSymbolInCurrentScope(argument.value()).get().type()) {
 				case INTEGER_32 -> "@.str.4";
 				case DOUBLE -> "@.str.3";
+				case BOOLEAN -> "@.str.6";
 				case STRING -> ""; //TODO#20
 				case INT_FUNCTION -> null;
 			};
