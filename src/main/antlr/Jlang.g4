@@ -51,15 +51,15 @@ scoped_if_statement
     ;
 
 logical_expression
-    : logical_element ( AND logical_element )* #andExpression
-    | logical_element ( OR logical_element )* #orExpression
-    | logical_element ( EQ logical_element )* #eqExpression
+    : logical_element #singleLogicalElement
+    | logical_element ( AND logical_element )+ #andExpression
+    | logical_element ( OR logical_element )+ #orExpression
+    | logical_element ( EQ logical_element )+ #eqExpression
     ;
 
 logical_element
     : ID
-    | FALSE
-    | TRUE
+    | boolean
     | arithmetic_logical_expression
     ;
 

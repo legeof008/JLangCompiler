@@ -466,6 +466,81 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		); //TODO - this looks bad
 	}
 
+	//	@Override
+	//	public void exitSingleLogicalElement(JlangParser.SingleLogicalElementContext ctx) {
+	//
+	//	}
+
+	@Override
+	public void exitAndExpression(JlangParser.AndExpressionContext ctx) {
+		var right = currentScope.popValueFromStack();
+		var left = currentScope.popValueFromStack();
+		var and = codeGenerationFacade.and(left.value(), right.value());
+		programParts.add(and._2());
+		currentScope.pushValueOnStack(new Value(and._1.value(), Type.BOOLEAN));
+	}
+
+	@Override
+	public void exitOrExpression(JlangParser.OrExpressionContext ctx) {
+		var right = currentScope.popValueFromStack();
+		var left = currentScope.popValueFromStack();
+		var or = codeGenerationFacade.or(left.value(), right.value());
+		programParts.add(or._2());
+		currentScope.pushValueOnStack(new Value(or._1.value(), Type.BOOLEAN));
+	}
+
+	@Override
+	public void exitEqExpression(JlangParser.EqExpressionContext ctx) {
+		var right = currentScope.popValueFromStack();
+		var left = currentScope.popValueFromStack();
+		var eq = codeGenerationFacade.eq(left.value(), right.value());
+		programParts.add(eq._2());
+		currentScope.pushValueOnStack(new Value(eq._1.value(), Type.BOOLEAN));
+	}
+
+	@Override
+	public void exitArithmeticLogicalExpression(JlangParser.ArithmeticLogicalExpressionContext ctx) {
+		var id = ctx.ID().getText();
+		var value = currentScope.popValueFromStack();
+		var symbol = currentScope.findSymbolInCurrentScope(id);
+		if (symbol.isEmpty()) {
+			errorsList.add(
+				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
+			);
+			return;
+		}
+		if (symbol.get().type() != value.type()) {
+			errorsList.add(
+				new CompilationLogicError(
+					"Variable " +
+					id +
+					" is of type " +
+					symbol.get().type() +
+					" but value is of type " +
+					value.type(),
+					ctx.start.getLine()
+				)
+			);
+			return;
+		}
+		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+	}
+
+	@Override
+	public void exitScopedifStatement(JlangParser.ScopedifStatementContext ctx) {
+		// TODO
+		// Pop the condition code from the stack
+		Value condition = currentScope.popValueFromStack();
+
+		// Generate the code for the condition
+		String conditionCode = "br i1 " + condition.value() + ", label %%%s, label %%%s";
+		programParts.add(conditionCode);
+
+		// Create a new basic block for the if statement
+		String ifBlock = codeGenerationFacade.createBasicBlock("if");
+		programParts.add(ifBlock);
+	}
+
 	public String getLLVMOutput() {
 		return String.join("\n", programParts);
 	}

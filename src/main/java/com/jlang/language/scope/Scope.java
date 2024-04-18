@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
 
-	@Getter
 	private final Scope parent; //TODO when we implement /better/ scoping
 
 	@Getter(value = AccessLevel.PRIVATE)
@@ -101,5 +100,13 @@ public class Scope {
 	 */
 	public void addSymbol(@NonNull Symbol symbol) {
 		symbols.add(symbol);
+	}
+
+	public Scope getParent() {
+		final boolean isGlobal = parent == null;
+		if (isGlobal) {
+			return this;
+		}
+		return parent;
 	}
 }

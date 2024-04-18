@@ -11,9 +11,11 @@ import lombok.AllArgsConstructor;
 public class LLVMGeneratorFacade {
 
 	private int registry;
+	private int blockCounter;
 
 	public LLVMGeneratorFacade() {
 		this.registry = 1;
+		this.blockCounter = 0;
 	}
 
 	public String declare(String id, Type type) {
@@ -211,6 +213,37 @@ public class LLVMGeneratorFacade {
 		} else {
 			return input + "\\00".repeat(length - input.length());
 		}
+	}
+
+	public Tuple2<Value, String> and(String left, String right) {
+		var and = Tuple.of(
+			Value.atRegistry(registry, Type.BOOLEAN),
+			"%%%d = and i1 %s, %s".formatted(registry, left, right)
+		);
+		registry++;
+		return and;
+	}
+
+	public Tuple2<Value, String> or(String left, String right) {
+		var or = Tuple.of(
+			Value.atRegistry(registry, Type.BOOLEAN),
+			"%%%d = or i1 %s, %s".formatted(registry, left, right)
+		);
+		registry++;
+		return or;
+	}
+
+	public Tuple2<Value, String> eq(String left, String right) {
+		var eq = Tuple.of(
+			Value.atRegistry(registry, Type.BOOLEAN),
+			"%%%d = icmp eq i32 %s, %s".formatted(registry, left, right)
+		);
+		registry++;
+		return eq;
+	}
+
+	public String createBasicBlock(String blockName) {
+		return String.format("%s_%d:", blockName, blockCounter++);
 	}
 
 	public void incrementRegistry() {
