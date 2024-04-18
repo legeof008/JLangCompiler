@@ -29,6 +29,22 @@ no to mamy y rowne 1.2
 c bedzie drodzy panstwo 2 * x + (2. - 3)
 lewa reka za prawe ucho ('no i co')
 na zachodzie jest ('tak ze string moze miec whitespacey w sobie')
+
+// function declaration
+ciach ciach funkcja ( no to mamy x co jest intem ) tu jest start
+nazachodziemamy('message')
+no i tyle
+
+// scoped loop
+tak w kolo tu jest start
+nazachodziemamy('message')
+no i tyle
+
+// scoped if statement
+gdyby tak prawda i klamstwo tu jest start
+nazachodziemamy('message')
+no i tyle
+
 ```
 
 From beginning to end these are:
