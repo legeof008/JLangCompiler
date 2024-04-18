@@ -28,10 +28,19 @@ function_declaration
     ;
 
 function_signature
-     : FUNCTION_DECLARATION_PREFIX ID LPAREN variable_declaration? RPAREN TYPE_DECLARATION INT_TYPE #intFunctionDeclaration
-     | FUNCTION_DECLARATION_PREFIX ID LPAREN variable_declaration? RPAREN TYPE_DECLARATION DOUBLE_TYPE #doubleFunctionDeclaration
-     | FUNCTION_DECLARATION_PREFIX ID LPAREN variable_declaration? RPAREN TYPE_DECLARATION VOID_TYPE #voidFunctionDeclaration
+     : FUNCTION_DECLARATION_PREFIX ID LPAREN parameter_list? RPAREN TYPE_DECLARATION INT_TYPE #intFunctionDeclaration
+     | FUNCTION_DECLARATION_PREFIX ID LPAREN parameter_list? RPAREN TYPE_DECLARATION DOUBLE_TYPE #doubleFunctionDeclaration
+     | FUNCTION_DECLARATION_PREFIX ID LPAREN parameter_list? RPAREN TYPE_DECLARATION VOID_TYPE #voidFunctionDeclaration
      ;
+
+parameter_list
+    : parameter ( COMMA parameter )*
+    ;
+
+parameter
+    : INT_TYPE ID #intParameter
+    | DOUBLE_TYPE ID #doubleParameter
+    ;
 
 scoped_loop
     : LOOP_SEQUENCE scoped_body #loopDeclaration
