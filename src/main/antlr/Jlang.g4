@@ -24,7 +24,7 @@ function_call
     ;
 
 function_declaration
-    : function_signature SCOPE_BEGIN (statement | NL)* SCOPE_END #functionDeclaration
+    : function_signature scoped_body #functionDeclaration
     ;
 
 function_signature
