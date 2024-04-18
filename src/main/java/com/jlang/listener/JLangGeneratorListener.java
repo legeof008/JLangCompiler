@@ -8,24 +8,21 @@ import static com.jlang.listener.ProgramInitHelper.PRINTF_SCANF_DECLERATIONS;
 import com.jlang.antlr.JlangBaseListener;
 import com.jlang.antlr.JlangParser;
 import com.jlang.error.CompilationLogicError;
+import com.jlang.language.Symbol;
+import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
+import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import com.jlang.llvm.variables.VariableType;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 
 public class JLangGeneratorListener extends JlangBaseListener {
 
 	private final LLVMGeneratorFacade codeGenerationFacade;
 	private final List<String> programParts;
-	private final Map<String, VariableType> variables;
-	private final Deque<Value> stack;
+	private final Scope scope;
 
 	@Getter
 	private final List<CompilationLogicError> errorsList;
@@ -33,10 +30,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public JLangGeneratorListener(LLVMGeneratorFacade codeGenerationFacade) {
 		this.codeGenerationFacade = codeGenerationFacade;
 		this.programParts = new ArrayList<>();
-		this.variables = new HashMap<>();
-		this.stack = new ArrayDeque<>();
 		this.errorsList = new ArrayList<>();
+		this.scope = Scope.global();
 	}
+
+	//TODO: Refactor all of the wierd usages of optional in methods below
 
 	@Override
 	public void enterProgram(JlangParser.ProgramContext ctx) {
@@ -52,31 +50,31 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 	@Override
 	public void exitInt(JlangParser.IntContext ctx) {
-		stack.push(new Value(ctx.getText(), VariableType.INTEGER_32));
+		scope.pushValueOnStack(new Value(ctx.getText(), Type.INTEGER_32));
 	}
 
 	@Override
 	public void exitDouble(JlangParser.DoubleContext ctx) {
-		stack.push(new Value(ctx.getText(), VariableType.DOUBLE));
+		scope.pushValueOnStack(new Value(ctx.getText(), Type.DOUBLE));
 	}
 
 	@Override
 	public void exitString(JlangParser.StringContext ctx) {
-		stack.push(new Value(ctx.getText(), VariableType.STRING));
+		scope.pushValueOnStack(new Value(ctx.getText(), Type.STRING));
 	}
 
 	@Override
 	public void exitIntDeclaration(JlangParser.IntDeclarationContext ctx) {
 		String variableName = ctx.ID().getText();
-		programParts.add(codeGenerationFacade.declare(variableName, VariableType.INTEGER_32));
-		variables.put(variableName, VariableType.INTEGER_32);
+		programParts.add(codeGenerationFacade.declare(variableName, Type.INTEGER_32));
+		scope.addSymbol(new Symbol(variableName, Type.INTEGER_32));
 	}
 
 	@Override
 	public void exitRealDeclaration(JlangParser.RealDeclarationContext ctx) {
 		String variableName = ctx.ID().getText();
-		programParts.add(codeGenerationFacade.declare(variableName, VariableType.DOUBLE));
-		variables.put(variableName, VariableType.DOUBLE);
+		programParts.add(codeGenerationFacade.declare(variableName, Type.DOUBLE));
+		scope.addSymbol(new Symbol(variableName, Type.DOUBLE));
 	}
 
 	@Override
@@ -84,8 +82,8 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		JlangParser.VariableDeclarationWithAssignmentContext ctx
 	) {
 		var id = ctx.ID().getText();
-		var value = stack.pop();
-		if (value.type() == VariableType.STRING) {
+		var value = scope.popValueFromStack();
+		if (value.type() == Type.STRING) {
 			programParts.addFirst(codeGenerationFacade.createConstantString(id, value.value()));
 			programParts.add(codeGenerationFacade.declare(id, "[255 x i8]"));
 			programParts.add(codeGenerationFacade.assign(id, id));
@@ -93,26 +91,27 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			programParts.add(codeGenerationFacade.declare(id, value.type()));
 			programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
 		}
-		variables.put(id, value.type());
+		scope.addSymbol(new Symbol(id, value.type()));
 	}
 
 	@Override
 	public void exitVariableAssignment(JlangParser.VariableAssignmentContext ctx) {
 		var id = ctx.ID().getText();
-		var value = stack.pop();
-		if (!variables.containsKey(id)) {
+		var value = scope.popValueFromStack();
+		var symbol = scope.findSymbolInCurrentScope(id);
+		if (symbol.isEmpty()) {
 			errorsList.add(
 				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
 			);
 			return;
 		}
-		if (variables.get(id) != value.type()) {
+		if (symbol.get().type() != value.type()) {
 			errorsList.add(
 				new CompilationLogicError(
 					"Variable " +
 					id +
 					" is of type " +
-					variables.get(id) +
+					symbol.get().type() +
 					" but value is of type " +
 					value.type(),
 					ctx.start.getLine()
@@ -125,8 +124,8 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 	@Override
 	public void exitAddition(JlangParser.AdditionContext ctx) {
-		var right = stack.pop();
-		var left = stack.pop();
+		var right = scope.popValueFromStack();
+		var left = scope.popValueFromStack();
 		if (left.type() != right.type()) {
 			errorsList.add(
 				new CompilationLogicError(
@@ -139,13 +138,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.add(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
+		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
 	@Override
 	public void exitSubtraction(JlangParser.SubtractionContext ctx) {
-		var right = stack.pop();
-		var left = stack.pop();
+		var right = scope.popValueFromStack();
+		var left = scope.popValueFromStack();
 		if (left.type() != right.type()) {
 			errorsList.add(
 				new CompilationLogicError(
@@ -158,13 +157,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.sub(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
+		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
 	@Override
 	public void exitMultiplication(JlangParser.MultiplicationContext ctx) {
-		var right = stack.pop();
-		var left = stack.pop();
+		var right = scope.popValueFromStack();
+		var left = scope.popValueFromStack();
 		if (left.type() != right.type()) {
 			errorsList.add(
 				new CompilationLogicError(
@@ -177,13 +176,13 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.mul(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
+		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
 	@Override
 	public void exitDivision(JlangParser.DivisionContext ctx) {
-		var right = stack.pop();
-		var left = stack.pop();
+		var right = scope.popValueFromStack();
+		var left = scope.popValueFromStack();
 		if (left.type() != right.type()) {
 			errorsList.add(
 				new CompilationLogicError(
@@ -196,28 +195,29 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var add = codeGenerationFacade.div(left.value(), right.value(), left.type());
 		programParts.add(add._2());
 
-		stack.push(new Value(add._1.value(), left.type()));
+		scope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
 	@Override
 	public void exitVariable(JlangParser.VariableContext ctx) {
 		var id = ctx.ID().getText();
-		if (!variables.containsKey(id)) {
+		var type = scope.findSymbolInCurrentScope(id).map(Symbol::type);
+		if (type.isEmpty()) {
 			errorsList.add(
 				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
 			);
 			return;
 		}
-		var type = variables.get(id);
 
-		var load = switch (type) {
-			case DOUBLE, INTEGER_32 -> codeGenerationFacade.load(id, type);
-			case STRING -> codeGenerationFacade.loadString(id, 16, type);
-		};
+		var load =
+			switch (type.get()) {
+				case DOUBLE, INTEGER_32 -> codeGenerationFacade.load(id, type.get());
+				case STRING -> codeGenerationFacade.loadString(id, 16, type.get());
+			};
 
 		programParts.add(load._2());
 
-		stack.push(new Value(load._1.value(), type));
+		scope.pushValueOnStack(new Value(load._1.value(), type.get()));
 	}
 
 	@Override
@@ -225,7 +225,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String functionName = ctx.ID().getText();
 		List<Value> arguments = new ArrayList<>();
 		for (JlangParser.Expression0Context ignored : ctx.argument_list().expression0()) {
-			arguments.add(stack.pop());
+			arguments.add(scope.popValueFromStack());
 		}
 		Collections.reverse(arguments); // Reverse the arguments because they are in reverse order on the stack
 
@@ -259,9 +259,9 @@ public class JLangGeneratorListener extends JlangBaseListener {
 				case STRING -> "@.str.5";
 			};
 		final var printfCodeForStrings = String.format(
-				"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([255 x i8], [255 x i8]* %s, i32 0, i32 0), i8* %s)",
-				printfFormat,
-				argument.value()
+			"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([255 x i8], [255 x i8]* %s, i32 0, i32 0), i8* %s)",
+			printfFormat,
+			argument.value()
 		);
 		final var printfCode = String.format(
 			"call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s %s)",
@@ -269,7 +269,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			argument.type().getLlvmVariableNameLiteral(),
 			argument.value()
 		);
-		programParts.add(argument.type() == VariableType.STRING ? printfCodeForStrings : printfCode);
+		programParts.add(argument.type() == Type.STRING ? printfCodeForStrings : printfCode);
 		codeGenerationFacade.incrementRegistry();
 	}
 
@@ -282,7 +282,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		Value argument = arguments.getFirst();
-		if (!variables.containsKey(argument.value())) { // this fails
+		if (scope.findSymbolInCurrentScope(argument.value()).isEmpty()) {
 			errorsList.add(
 				new CompilationLogicError("Variable " + argument.value() + " is not declared", -1)
 			);
@@ -290,15 +290,15 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		String scanfFormat =
-			switch (variables.get(argument.value())) {
+			switch (scope.findSymbolInCurrentScope(argument.value()).get().type()) {
 				case INTEGER_32 -> "@.str.4";
 				case DOUBLE -> "@.str.3";
-				case STRING -> "";
+				case STRING -> ""; //TODO#20
 			};
 		final var scanfCode = String.format(
 			"call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* %s, i32 0, i32 0), %s* %%%s)",
 			scanfFormat,
-			variables.get(argument.value()).getLlvmVariableNameLiteral(),
+			scope.findSymbolInCurrentScope(argument.value()).get().type().getLlvmVariableNameLiteral(),
 			argument.value()
 		);
 		programParts.add(scanfCode);
@@ -308,7 +308,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	@Override
 	public void exitVariableAddress(JlangParser.VariableAddressContext ctx) {
 		var id = ctx.ID().getText();
-		if (!variables.containsKey(id)) {
+		if (scope.findSymbolInCurrentScope(id).isEmpty()) {
 			errorsList.add(
 				new CompilationLogicError("Variable " + id + " is not declared", ctx.start.getLine())
 			);
@@ -316,7 +316,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		}
 
 		// Instead of loading the variable into a register, we just push the variable name onto the stack
-		stack.push(new Value(id, variables.get(id)));
+		scope.pushValueOnStack(new Value(id, scope.findSymbolInCurrentScope(id).get().type())); //TODO - this looks bad
 	}
 
 	public String getLLVMOutput() {

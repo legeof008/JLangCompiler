@@ -51,6 +51,10 @@ expression2
     | LPAREN expression0 RPAREN #parenthesis
     ;
 
+/**
+ * Lexer Rules
+ */
+
 INT_TYPE: 'intem';
 DOUBLE_TYPE: 'rzeczywiste' ;
 VAR_DECLARATION: 'no to mamy';

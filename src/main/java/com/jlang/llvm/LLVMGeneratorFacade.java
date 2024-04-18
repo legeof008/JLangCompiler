@@ -1,7 +1,7 @@
 package com.jlang.llvm;
 
+import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import com.jlang.llvm.variables.VariableType;
 import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.AccessLevel;
@@ -16,7 +16,7 @@ public class LLVMGeneratorFacade {
 		this.registry = 1;
 	}
 
-	public String declare(String id, VariableType type) {
+	public String declare(String id, Type type) {
 		return "%%%s = alloca %s".formatted(id, type.getLlvmVariableNameLiteral());
 	}
 
@@ -24,7 +24,7 @@ public class LLVMGeneratorFacade {
 		return "%%%s = alloca %s".formatted(id, type);
 	}
 
-	public String assign(String id, String value, VariableType type) {
+	public String assign(String id, String value, Type type) {
 		return "store %s %s, %s* %%%s".formatted(
 				type.getLlvmVariableNameLiteral(),
 				value,
@@ -51,7 +51,7 @@ public class LLVMGeneratorFacade {
 	 * Add two values
 	 * @return Tuple2<Integer,String> where Integer is the registry and String is the LLVM code
 	 */
-	public Tuple2<Value, String> add(String valueLeft, String valueRight, VariableType type) {
+	public Tuple2<Value, String> add(String valueLeft, String valueRight, Type type) {
 		final Tuple2<Value, String> ret;
 		switch (type) {
 			case INTEGER_32:
@@ -75,7 +75,7 @@ public class LLVMGeneratorFacade {
 		}
 	}
 
-	public Tuple2<Value, String> sub(String valueLeft, String valueRight, VariableType type) {
+	public Tuple2<Value, String> sub(String valueLeft, String valueRight, Type type) {
 		final Tuple2<Value, String> ret;
 		switch (type) {
 			case INTEGER_32:
@@ -99,7 +99,7 @@ public class LLVMGeneratorFacade {
 		}
 	}
 
-	public Tuple2<Value, String> mul(String valueLeft, String valueRight, VariableType type) {
+	public Tuple2<Value, String> mul(String valueLeft, String valueRight, Type type) {
 		final Tuple2<Value, String> ret;
 		switch (type) {
 			case INTEGER_32:
@@ -123,7 +123,7 @@ public class LLVMGeneratorFacade {
 		}
 	}
 
-	public Tuple2<Value, String> div(String valueLeft, String valueRight, VariableType type) {
+	public Tuple2<Value, String> div(String valueLeft, String valueRight, Type type) {
 		final Tuple2<Value, String> ret;
 		switch (type) {
 			case INTEGER_32:
@@ -147,7 +147,7 @@ public class LLVMGeneratorFacade {
 		}
 	}
 
-	public Tuple2<Value, String> load(String id, VariableType type) {
+	public Tuple2<Value, String> load(String id, Type type) {
 		var load = Tuple.of(
 			Value.atRegistry(registry, type),
 			"%%%d = load %s, %s* %%%s".formatted(
@@ -161,7 +161,7 @@ public class LLVMGeneratorFacade {
 		return load;
 	}
 
-	public Tuple2<Value, String> loadString(String id, int stringLength, VariableType type) {
+	public Tuple2<Value, String> loadString(String id, int stringLength, Type type) {
 		var load = Tuple.of(
 			Value.atRegistry(registry, type),
 			"%%%d = getelementptr inbounds [%d x i8], [%d x i8]* %%%s, i64 0, i64 0".formatted(

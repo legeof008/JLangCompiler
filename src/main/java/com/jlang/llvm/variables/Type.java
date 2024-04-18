@@ -7,14 +7,14 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public enum VariableType {
+public enum Type {
 	INTEGER_32("i32", ".3"),
 	DOUBLE("double", ".1"),
 	STRING("i8*", ".5");
 
 	private final String llvmVariableNameLiteral;
 	private final String llvmStringPointer;
-	private static final Map<String, VariableType> mapOfAntlrNameToVariableType = Map.of(
+	private static final Map<String, Type> mapOfAntlrNameToVariableType = Map.of(
 		"intem",
 		INTEGER_32,
 		"rzeczywiste",
@@ -23,7 +23,7 @@ public enum VariableType {
 		STRING
 	);
 
-	public static VariableType map(String antlrTypeName) {
+	public static Type map(String antlrTypeName) {
 		return mapOfAntlrNameToVariableType.get(antlrTypeName);
 	}
 }

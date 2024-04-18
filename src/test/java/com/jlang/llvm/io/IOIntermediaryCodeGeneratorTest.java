@@ -2,11 +2,11 @@ package com.jlang.llvm.io;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.jlang.llvm.variables.VariableType;
+import com.jlang.llvm.variables.Type;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-@Disabled("TODO")
+@Disabled("TODO#21")
 class IOIntermediaryCodeGeneratorTest {
 
 	private IOGenerator ioGenerator;
@@ -26,7 +26,7 @@ class IOIntermediaryCodeGeneratorTest {
 		//given
 		ioGenerator = new IOIntermediaryCodeGenerator(1);
 		//when
-		var result = ioGenerator.printf("variable_id", VariableType.INTEGER_32);
+		var result = ioGenerator.printf("variable_id", Type.INTEGER_32);
 		//then
 		assertThat(result).contains(PRINTF_GENERATED_CODE);
 		assertThat(ioGenerator.getRegistry()).isEqualTo(3);
@@ -37,7 +37,7 @@ class IOIntermediaryCodeGeneratorTest {
 		//given
 		ioGenerator = new IOIntermediaryCodeGenerator(2);
 		//when
-		var result = ioGenerator.scanf("another_variable_id", VariableType.INTEGER_32);
+		var result = ioGenerator.scanf("another_variable_id", Type.INTEGER_32);
 		//then
 		assertThat(result).contains(SCANF_GENERATED_CODE);
 		assertThat(ioGenerator.getRegistry()).isEqualTo(3);
