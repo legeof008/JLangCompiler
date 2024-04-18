@@ -28,7 +28,9 @@ function_declaration
     ;
 
 function_signature
-     : FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN #functionSignature
+     : FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN TYPE_DECLARATION INT_TYPE #intFunctionDeclaration
+     | FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN TYPE_DECLARATION DOUBLE_TYPE #doubleFunctionDeclaration
+     | FUNCTION_DECLARATION_PREFIX ID LPAREN ( variable_declaration? ) RPAREN TYPE_DECLARATION VOID_TYPE #voidFunctionDeclaration
      ;
 
 scoped_loop
@@ -99,6 +101,7 @@ expression2
  * Lexer Rules
  */
 
+VOID_TYPE: 'wojdem';
 INT_TYPE: 'intem';
 DOUBLE_TYPE: 'rzeczywiste' ;
 VAR_DECLARATION: 'no to mamy';
