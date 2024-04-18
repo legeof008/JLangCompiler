@@ -9,18 +9,43 @@ import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
 
+	@Getter
 	private final Scope parent; //TODO when we implement /better/ scoping
+
+	@Getter(value = AccessLevel.PRIVATE)
 	private final Deque<Value> stack = new ArrayDeque<>();
+
+	@Getter(value = AccessLevel.PRIVATE)
 	private final Set<Symbol> symbols = new HashSet<>();
 
 	public static Scope global() {
 		return new Scope(null);
+	}
+
+	/**
+	 * A child scope should have access to data from all the scopes 'above' itself.
+	 * Therefore a child scope copies all the scope data from its parent.
+	 *
+	 * @param parent The parent scope from which all symbols and values are copied from
+	 * @return a new scope with copied scope data
+	 */
+	public static Scope child(Scope parent) {
+		var childScope = new Scope(parent);
+		childScope.stack.addAll(parent.stack);
+		childScope.symbols.addAll(parent.symbols);
+		return childScope;
+	}
+
+	public static Scope childNoCopy(Scope parent) {
+		var childScope = new Scope(parent);
+		return childScope;
 	}
 
 	/**

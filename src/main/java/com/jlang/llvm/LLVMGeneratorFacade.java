@@ -20,6 +20,15 @@ public class LLVMGeneratorFacade {
 		return "%%%s = alloca %s".formatted(id, type.getLlvmVariableNameLiteral());
 	}
 
+	public String declareIntFunction(String id) {
+		return "define i32 @" + id + "() nounwind {\n";
+	}
+
+	public String endIntFunction(String value) {
+		// TODO: handle returning actual values
+		return "ret i32 " + value + "\n}\n";
+	}
+
 	public String declare(String id, String type) {
 		return "%%%s = alloca %s".formatted(id, type);
 	}
