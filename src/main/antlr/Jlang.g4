@@ -88,6 +88,7 @@ variable_declaration
     : VAR_DECLARATION ID TYPE_DECLARATION INT_TYPE #intDeclaration
     | VAR_DECLARATION ID TYPE_DECLARATION DOUBLE_TYPE #realDeclaration
     | VAR_DECLARATION ID TYPE_DECLARATION BOOLEAN_TYPE #booleanDeclaration
+    | VAR_DECLARATION ID ASSIGNMENT_DECLARATION function_call #functionalAssignment
     | VAR_DECLARATION ID ASSIGNMENT_DECLARATION expression0 #variableDeclarationWithAssignment
     ;
 
@@ -134,6 +135,7 @@ VAR_DECLARATION: 'no to mamy';
 TYPE_DECLARATION: 'co jest' ;
 ASSIGNMENT_DECLARATION: 'rowne' ;
 ARITHMETIC_ASSIGNMENT: 'bedzie drodzy panstwo' ;
+FUNCTION_ASSIGNMENT: 'z glowy';
 FUNCTION_DECLARATION_PREFIX: 'ciach ciach';
 RETURN_SEQUENCE: 'pach pach' ;
 RETURN_VOID: 'nic';

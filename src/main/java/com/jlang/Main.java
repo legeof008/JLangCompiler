@@ -34,7 +34,7 @@ public class Main {
 	}
 
 	private static void saveResult(Either<Compiler.Failure, Compiler.Output> result, String filePath)
-			throws IOException, InterruptedException {
+		throws IOException, InterruptedException {
 		System.out.println("Compilation successful");
 		final var compiledCode = result.get();
 		final var compiledFilePath = filePath.replace(".j", ".ll");
@@ -43,7 +43,8 @@ public class Main {
 		compileToObjectFile(compiledFilePath);
 	}
 
-	private static void compileToObjectFile(String llFilePath) throws IOException, InterruptedException {
+	private static void compileToObjectFile(String llFilePath)
+		throws IOException, InterruptedException {
 		var llcCompiler = new LLCProcess();
 		var compilationResult = llcCompiler.compileToObjectFile(llFilePath);
 		if (compilationResult == LLCCompilationStatus.SUCCESS) {
