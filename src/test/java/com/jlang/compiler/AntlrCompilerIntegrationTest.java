@@ -33,13 +33,12 @@ class AntlrCompilerIntegrationTest {
 			return Stream.of(
 				of(
 					"""
-ciach ciach niemejn () co jest wojdem tu jest start
+ciach ciach niemejn () co jest intem tu jest start
 no to mamy l rowne 1388
 nazachodziejest(l)
-pach pach nic no i tyle
+pach pach l no i tyle
 ciach ciach main () co jest intem tu jest start
-no to mamy c rowne 1
-niemejn()
+no to mamy c rowne niemejn()
 pach pach c no i tyle
 """,
 					"variable declaration"

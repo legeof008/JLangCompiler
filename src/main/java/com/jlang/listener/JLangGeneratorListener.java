@@ -130,7 +130,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			var symbol = contextSymbol.get();
 			var loadTouple = codeGenerationFacade.load(symbol.name(), symbol.type());
 			programParts.add(loadTouple._2);
-			// TODO handle voids
 			var returnType = currentFunctionReturnType.remove();
 			if (returnType == Type.INT_FUNCTION) {
 				programParts.add(codeGenerationFacade.endIntFunction(loadTouple._1.value()));
@@ -176,6 +175,30 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		String variableName = ctx.ID().getText();
 		programParts.add(codeGenerationFacade.declare(variableName, Type.BOOLEAN));
 		currentScope.addSymbol(new Symbol(variableName, Type.BOOLEAN));
+	}
+
+	@Override
+	public void exitFunctionalAssignment(JlangParser.FunctionalAssignmentContext ctx) {
+		var functionName = ctx.function_call().start.getText();
+		var id = ctx.ID().getText();
+		var possiblyExistingFunctionSymbol = currentScope.findSymbolInCurrentScope(functionName);
+		if (possiblyExistingFunctionSymbol.isDefined()) {
+			var functionSymbol = possiblyExistingFunctionSymbol.get();
+			var callFunction = codeGenerationFacade.callFunctionNoArgs(
+					functionSymbol.name(),
+					functionSymbol.type()
+			);
+			// TODO add handling for more than ints
+			programParts.add(codeGenerationFacade.declare(id, Type.INTEGER_32));
+			programParts.add(callFunction._2);
+			programParts.add(codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type()));
+			currentScope.addSymbol(new Symbol(id, Type.INTEGER_32));
+		} else {
+			errorsList.add(
+					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+			);
+		}
+
 	}
 
 	@Override
@@ -340,14 +363,14 @@ public class JLangGeneratorListener extends JlangBaseListener {
 				break;
 			default:
 				var possiblyExistingFunctionSymbol = currentScope.findSymbolInCurrentScope(functionName);
-				if (possiblyExistingFunctionSymbol.isDefined()) {
+				if (possiblyExistingFunctionSymbol.isDefined() && possiblyExistingFunctionSymbol.get().type() == Type.VOID_FUNCTION) {
 					var functionSymbol = possiblyExistingFunctionSymbol.get();
 					var callFunction = codeGenerationFacade.callFunctionNoArgs(
 						functionSymbol.name(),
 						functionSymbol.type()
 					);
 					programParts.add(callFunction._2);
-				} else {
+				} else if (!possiblyExistingFunctionSymbol.isDefined()){
 					errorsList.add(
 						new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
 					);
