@@ -12,9 +12,14 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
+
+	@Getter
+	@Setter
+	private int scopeRegistry = 1;
 
 	private final Scope parent; //TODO when we implement /better/ scoping
 
@@ -43,8 +48,7 @@ public class Scope {
 	}
 
 	public static Scope childNoCopy(Scope parent) {
-		var childScope = new Scope(parent);
-		return childScope;
+		return new Scope(parent);
 	}
 
 	/**

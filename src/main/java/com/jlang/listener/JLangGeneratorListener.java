@@ -12,7 +12,11 @@ import com.jlang.language.scope.Scope;
 import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Queue;
 import lombok.Getter;
 
 public class JLangGeneratorListener extends JlangBaseListener {
@@ -185,20 +189,21 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		if (possiblyExistingFunctionSymbol.isDefined()) {
 			var functionSymbol = possiblyExistingFunctionSymbol.get();
 			var callFunction = codeGenerationFacade.callFunctionNoArgs(
-					functionSymbol.name(),
-					functionSymbol.type()
+				functionSymbol.name(),
+				functionSymbol.type()
 			);
 			// TODO add handling for more than ints
 			programParts.add(codeGenerationFacade.declare(id, Type.INTEGER_32));
 			programParts.add(callFunction._2);
-			programParts.add(codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type()));
+			programParts.add(
+				codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type())
+			);
 			currentScope.addSymbol(new Symbol(id, Type.INTEGER_32));
 		} else {
 			errorsList.add(
-					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+				new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
 			);
 		}
-
 	}
 
 	@Override
@@ -363,14 +368,17 @@ public class JLangGeneratorListener extends JlangBaseListener {
 				break;
 			default:
 				var possiblyExistingFunctionSymbol = currentScope.findSymbolInCurrentScope(functionName);
-				if (possiblyExistingFunctionSymbol.isDefined() && possiblyExistingFunctionSymbol.get().type() == Type.VOID_FUNCTION) {
+				if (
+					possiblyExistingFunctionSymbol.isDefined() &&
+					possiblyExistingFunctionSymbol.get().type() == Type.VOID_FUNCTION
+				) {
 					var functionSymbol = possiblyExistingFunctionSymbol.get();
 					var callFunction = codeGenerationFacade.callFunctionNoArgs(
 						functionSymbol.name(),
 						functionSymbol.type()
 					);
 					programParts.add(callFunction._2);
-				} else if (!possiblyExistingFunctionSymbol.isDefined()){
+				} else if (!possiblyExistingFunctionSymbol.isDefined()) {
 					errorsList.add(
 						new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
 					);
@@ -524,21 +532,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			return;
 		}
 		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
-	}
-
-	@Override
-	public void exitScopedifStatement(JlangParser.ScopedifStatementContext ctx) {
-		// TODO
-		// Pop the condition code from the stack
-		Value condition = currentScope.popValueFromStack();
-
-		// Generate the code for the condition
-		String conditionCode = "br i1 " + condition.value() + ", label %%%s, label %%%s";
-		programParts.add(conditionCode);
-
-		// Create a new basic block for the if statement
-		String ifBlock = codeGenerationFacade.createBasicBlock("if");
-		programParts.add(ifBlock);
 	}
 
 	public String getLLVMOutput() {

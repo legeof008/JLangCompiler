@@ -11,11 +11,9 @@ import lombok.AllArgsConstructor;
 public class LLVMGeneratorFacade {
 
 	private int registry;
-	private int blockCounter;
 
 	public LLVMGeneratorFacade() {
 		this.registry = 1;
-		this.blockCounter = 0;
 	}
 
 	public String declare(String id, Type type) {
@@ -240,10 +238,6 @@ public class LLVMGeneratorFacade {
 		);
 		registry++;
 		return eq;
-	}
-
-	public String createBasicBlock(String blockName) {
-		return String.format("%s_%d:", blockName, blockCounter++);
 	}
 
 	public void incrementRegistry() {
