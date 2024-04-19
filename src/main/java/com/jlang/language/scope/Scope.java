@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class Scope {
@@ -24,6 +25,9 @@ public class Scope {
 
 	@Getter(value = AccessLevel.PRIVATE)
 	private final Set<Symbol> symbols = new HashSet<>();
+	@Getter
+	@Setter
+	private int registry = 1;
 
 	public static Scope global() {
 		return new Scope(null);
