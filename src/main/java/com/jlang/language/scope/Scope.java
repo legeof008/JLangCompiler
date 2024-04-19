@@ -28,6 +28,9 @@ public class Scope {
 
 	@Getter(value = AccessLevel.PRIVATE)
 	private final Set<Symbol> symbols = new HashSet<>();
+	@Getter
+	@Setter
+	private int registry = 1;
 
 	public static Scope global() {
 		return new Scope(null);

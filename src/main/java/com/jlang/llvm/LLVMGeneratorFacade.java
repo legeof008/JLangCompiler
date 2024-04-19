@@ -6,10 +6,14 @@ import io.vavr.Tuple;
 import io.vavr.Tuple2;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 public class LLVMGeneratorFacade {
 
+	@Getter
+	@Setter
 	private int registry;
 
 	public LLVMGeneratorFacade() {

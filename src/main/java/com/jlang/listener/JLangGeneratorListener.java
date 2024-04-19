@@ -13,9 +13,7 @@ import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.Queue;
 import lombok.Getter;
 
@@ -124,6 +122,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public void exitScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
 		currentScope = currentScope.getParent();
 	}
+	@Override
+	public void exitScopeWithReturnDecleration(JlangParser.ScopeWithReturnDeclerationContext ctx) {
+		if(currentScope.getParent() != null)
+			currentScope = currentScope.getParent();
+	}
 
 	@Override
 	public void exitReturnVariable(JlangParser.ReturnVariableContext ctx) {
@@ -132,7 +135,11 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var contextSymbol = currentScope.findSymbolInCurrentScope(symbolNameInReturnExpression);
 		if (contextSymbol.isDefined()) {
 			var symbol = contextSymbol.get();
+
+			codeGenerationFacade.setRegistry(currentScope.getRegistry());
 			var loadTouple = codeGenerationFacade.load(symbol.name(), symbol.type());
+			currentScope.setRegistry(currentScope.getRegistry() + 1);
+
 			programParts.add(loadTouple._2);
 			var returnType = currentFunctionReturnType.remove();
 			if (returnType == Type.INT_FUNCTION) {
@@ -188,22 +195,24 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		var possiblyExistingFunctionSymbol = currentScope.findSymbolInCurrentScope(functionName);
 		if (possiblyExistingFunctionSymbol.isDefined()) {
 			var functionSymbol = possiblyExistingFunctionSymbol.get();
+			codeGenerationFacade.setRegistry(currentScope.getRegistry());
 			var callFunction = codeGenerationFacade.callFunctionNoArgs(
-				functionSymbol.name(),
-				functionSymbol.type()
+					functionSymbol.name(),
+					functionSymbol.type()
 			);
+			currentScope.setRegistry(currentScope.getRegistry() + 1);
+
 			// TODO add handling for more than ints
 			programParts.add(codeGenerationFacade.declare(id, Type.INTEGER_32));
 			programParts.add(callFunction._2);
-			programParts.add(
-				codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type())
-			);
+			programParts.add(codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type()));
 			currentScope.addSymbol(new Symbol(id, Type.INTEGER_32));
 		} else {
 			errorsList.add(
-				new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
 			);
 		}
+
 	}
 
 	@Override
@@ -264,9 +273,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			);
 			return;
 		}
+		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		var add = codeGenerationFacade.add(left.value(), right.value(), left.type());
 		programParts.add(add._2());
-
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
 		currentScope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -283,9 +293,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			);
 			return;
 		}
+		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		var add = codeGenerationFacade.sub(left.value(), right.value(), left.type());
 		programParts.add(add._2());
-
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
 		currentScope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -302,9 +313,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			);
 			return;
 		}
+		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		var add = codeGenerationFacade.mul(left.value(), right.value(), left.type());
 		programParts.add(add._2());
-
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
 		currentScope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -321,9 +333,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			);
 			return;
 		}
+		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		var add = codeGenerationFacade.div(left.value(), right.value(), left.type());
 		programParts.add(add._2());
-
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
 		currentScope.pushValueOnStack(new Value(add._1.value(), left.type()));
 	}
 
@@ -340,8 +353,18 @@ public class JLangGeneratorListener extends JlangBaseListener {
 
 		var load =
 			switch (type.get()) {
-				case DOUBLE, INTEGER_32, BOOLEAN -> codeGenerationFacade.load(id, type.get());
-				case STRING -> codeGenerationFacade.loadString(id, 16, type.get());
+				case DOUBLE, INTEGER_32, BOOLEAN -> {
+					codeGenerationFacade.setRegistry(currentScope.getRegistry());
+					var line =  codeGenerationFacade.load(id, type.get());
+					currentScope.setRegistry(currentScope.getRegistry() + 1);
+					yield line;
+				}
+				case STRING -> {
+					codeGenerationFacade.setRegistry(currentScope.getRegistry());
+					var line = codeGenerationFacade.loadString(id, 16, type.get());
+					currentScope.setRegistry(currentScope.getRegistry() + 1);
+					yield line;
+				}
 				case null, default -> null;
 			};
 
@@ -415,8 +438,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			argument.type().getLlvmVariableNameLiteral(),
 			argument.value()
 		);
+		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		programParts.add(argument.type() == Type.STRING ? printfCodeForStrings : printfCode);
-		codeGenerationFacade.incrementRegistry();
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
+		//codeGenerationFacade.incrementRegistry();
 	}
 
 	private void handleReadFunction(List<Value> arguments) {
