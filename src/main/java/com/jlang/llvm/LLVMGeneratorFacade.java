@@ -17,7 +17,7 @@ public class LLVMGeneratorFacade {
 	private int registry;
 
 	public LLVMGeneratorFacade() {
-		this.registry = 1;
+		this.registry = 0;
 	}
 
 	public String declare(String id, Type type) {

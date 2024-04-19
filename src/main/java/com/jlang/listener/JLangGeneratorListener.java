@@ -13,7 +13,9 @@ import com.jlang.llvm.LLVMGeneratorFacade;
 import com.jlang.llvm.variables.Type;
 import com.jlang.llvm.variables.Value;
 import java.util.ArrayDeque;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Queue;
 import lombok.Getter;
 
@@ -122,10 +124,10 @@ public class JLangGeneratorListener extends JlangBaseListener {
 	public void exitScopeDecleration(JlangParser.ScopeDeclerationContext ctx) {
 		currentScope = currentScope.getParent();
 	}
+
 	@Override
 	public void exitScopeWithReturnDecleration(JlangParser.ScopeWithReturnDeclerationContext ctx) {
-		if(currentScope.getParent() != null)
-			currentScope = currentScope.getParent();
+		if (currentScope.getParent() != null) currentScope = currentScope.getParent();
 	}
 
 	@Override
@@ -197,22 +199,23 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			var functionSymbol = possiblyExistingFunctionSymbol.get();
 			codeGenerationFacade.setRegistry(currentScope.getRegistry());
 			var callFunction = codeGenerationFacade.callFunctionNoArgs(
-					functionSymbol.name(),
-					functionSymbol.type()
+				functionSymbol.name(),
+				functionSymbol.type()
 			);
 			currentScope.setRegistry(currentScope.getRegistry() + 1);
 
 			// TODO add handling for more than ints
 			programParts.add(codeGenerationFacade.declare(id, Type.INTEGER_32));
 			programParts.add(callFunction._2);
-			programParts.add(codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type()));
+			programParts.add(
+				codeGenerationFacade.assign(id, callFunction._1.value(), callFunction._1.type())
+			);
 			currentScope.addSymbol(new Symbol(id, Type.INTEGER_32));
 		} else {
 			errorsList.add(
-					new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
+				new CompilationLogicError("Unknown function: " + functionName, ctx.start.getLine())
 			);
 		}
-
 	}
 
 	@Override
@@ -225,6 +228,9 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			programParts.addFirst(codeGenerationFacade.createConstantString(id, value.value()));
 			programParts.add(codeGenerationFacade.declare(id, "[255 x i8]"));
 			programParts.add(codeGenerationFacade.assign(id, id));
+
+			codeGenerationFacade.setRegistry(currentScope.getRegistry());
+			//	currentScope.setRegistry(currentScope.getRegistry() + 1);
 		} else {
 			programParts.add(codeGenerationFacade.declare(id, value.type()));
 			programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
@@ -355,7 +361,7 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			switch (type.get()) {
 				case DOUBLE, INTEGER_32, BOOLEAN -> {
 					codeGenerationFacade.setRegistry(currentScope.getRegistry());
-					var line =  codeGenerationFacade.load(id, type.get());
+					var line = codeGenerationFacade.load(id, type.get());
 					currentScope.setRegistry(currentScope.getRegistry() + 1);
 					yield line;
 				}
@@ -441,7 +447,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		codeGenerationFacade.setRegistry(currentScope.getRegistry());
 		programParts.add(argument.type() == Type.STRING ? printfCodeForStrings : printfCode);
 		currentScope.setRegistry(currentScope.getRegistry() + 1);
-		//codeGenerationFacade.incrementRegistry();
 	}
 
 	private void handleReadFunction(List<Value> arguments) {
@@ -499,11 +504,6 @@ public class JLangGeneratorListener extends JlangBaseListener {
 		); //TODO - this looks bad
 	}
 
-	//	@Override
-	//	public void exitSingleLogicalElement(JlangParser.SingleLogicalElementContext ctx) {
-	//
-	//	}
-
 	@Override
 	public void exitAndExpression(JlangParser.AndExpressionContext ctx) {
 		var right = currentScope.popValueFromStack();
@@ -557,6 +557,38 @@ public class JLangGeneratorListener extends JlangBaseListener {
 			return;
 		}
 		programParts.add(codeGenerationFacade.assign(id, value.value(), value.type()));
+	}
+
+	@Override
+	public void enterScopedifStatement(JlangParser.ScopedifStatementContext ctx) {
+		// Generate LLVM code for the condition
+		String condition = ctx.logical_expression().getText();
+		final var tupel = codeGenerationFacade.load(condition, Type.BOOLEAN); // Load the condition into a register
+		String conditionCode = "%%%d = icmp ne i32 %%%s, 0"; // LLVM code for the condition
+		conditionCode = String.format(conditionCode, codeGenerationFacade.getRegistry(), condition);
+		//		codeGenerationFacade.setRegistry(currentScope.getRegistry());
+		programParts.add(tupel._2());
+		//		currentScope.setRegistry(currentScope.getRegistry() + 1);
+		//		codeGenerationFacade.setRegistry(currentScope.getRegistry());
+		programParts.add(conditionCode);
+
+		// Generate LLVM code for branching
+		String branchCode = "br i1 %%%d, label %%if.then, label %%if.end";
+		branchCode = String.format(branchCode, codeGenerationFacade.getRegistry());
+		programParts.add(branchCode);
+		currentScope.setRegistry(currentScope.getRegistry() + 1);
+
+		// Add the label for the if block
+		programParts.add("if.then:");
+	}
+
+	@Override
+	public void exitScopedifStatement(JlangParser.ScopedifStatementContext ctx) {
+		// Generate LLVM code for the body of the if statement
+		// This will be handled by the other methods in the listener
+
+		// Add the label for the end of the if block
+		programParts.add("if.end:");
 	}
 
 	public String getLLVMOutput() {
